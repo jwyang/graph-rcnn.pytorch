@@ -6,6 +6,10 @@ __pycache__/
 # C extensions
 *.so
 
+# Python garbages
+*.py~
+*.pyc
+
 # Distribution / packaging
 .Python
 build/
@@ -14,7 +18,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# lib/
 lib64/
 parts/
 sdist/
