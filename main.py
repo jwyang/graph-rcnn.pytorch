@@ -58,9 +58,14 @@ def parse_args():
 
 def train(model):
     """
-    code for train
+    train scene graph generation model
     """
 
+def test(model):
+    """
+    test scene graph generation model
+    """
+    
 def main():
     """
     code for config
