@@ -9,8 +9,6 @@ Pytorch code for our ECCV 2018 paper ["Graph R-CNN for Scene Graph Generation"](
 
 :balloon: 2019-06-16: Plan is a bit delayed by ICCV rebuttal, but still on track. Stay tuned! -->
 
-:balloon: 2019-07-04: Object detection baseline model ready.
-
 ## Introduction
 
 This project is a set of reimplemented representative scene graph generation models, including:
@@ -33,7 +31,7 @@ The goal of gathering all these representative methods into a single repo is to 
 
 ## Checklist
 
-- [x] Faster R-CNN Baseline
+- [x] Faster R-CNN Baseline (:balloon: 2019-07-04)
 - [ ] Scene Graph Generation Baseline
 - [ ] Iterative Message Passing (IMP)
 - [ ] Multi-level Scene Description Network (MSDN)
