@@ -27,7 +27,9 @@ Our reimplementations are based on the following repositories:
 * [MSDN](https://github.com/yikang-li/MSDN)
 * [neural-motifs](https://github.com/rowanz/neural-motifs)
 
-The goal of gathering all these representative methods into a single repo is to establish a more fair comparison across different methods under the same settings. As you may notice in recent literatures, the reported numbers for IMP, MSDN, Graph R-CNN and Neural Motifs are usually confusing, especially due to the big gap between IMP style methods (first three) and Neural Motifs-style methods (neural motifs paper and other variants built on it). We hope this repo can establish a good benchmark for various scene graph generation methods, and contribute the research community!
+## Why we need this repository?
+
+The goal of gathering all these representative methods into a single repo is to establish a more fair comparison across different methods under the same settings. As you may notice in recent literatures, the reported numbers for IMP, MSDN, Graph R-CNN and Neural Motifs are usually confusing, **especially due to the big gap between IMP style methods (first three) and Neural Motifs-style methods (neural motifs paper and other variants built on it)**. We hope this repo can establish a good benchmark for various scene graph generation methods, and contribute to the research community!
 
 ## Checklist
 
