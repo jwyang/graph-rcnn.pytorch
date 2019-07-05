@@ -18,8 +18,8 @@ This is the new implementation of scene graph generation model, including not on
 ## Checklist
 
 - [x] Faster R-CNN Baseline
-- [] Scene Graph Generation Baseline
-- [] Iterative Message Passing (IMP)
-- [] Multi-level Scene Description Network (MSDN)
-- [] Neural Motif
-- [] Graph R-CNN
+- [ ] Scene Graph Generation Baseline
+- [ ] Iterative Message Passing (IMP)
+- [ ] Multi-level Scene Description Network (MSDN)
+- [ ] Neural Motif
+- [ ] Graph R-CNN
