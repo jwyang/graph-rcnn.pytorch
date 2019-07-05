@@ -2,8 +2,6 @@
 import torch
 
 from .box_head.box_head import build_roi_box_head
-from .mask_head.mask_head import build_roi_mask_head
-from .keypoint_head.keypoint_head import build_roi_keypoint_head
 from .relation_head.relation_head import build_roi_relation_head
 
 

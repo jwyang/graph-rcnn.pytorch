@@ -3,12 +3,12 @@ import torch
 from ..inference import RPNPostProcessor
 from ..utils import permute_and_flatten
 
-from lib.scene_parser.mask_rcnn.modeling.box_coder import BoxCoder
-from lib.scene_parser.mask_rcnn.modeling.utils import cat
-from lib.scene_parser.mask_rcnn.structures.bounding_box import BoxList
-from lib.scene_parser.mask_rcnn.structures.boxlist_ops import cat_boxlist
-from lib.scene_parser.mask_rcnn.structures.boxlist_ops import boxlist_nms
-from lib.scene_parser.mask_rcnn.structures.boxlist_ops import remove_small_boxes
+from lib.scene_parser.rcnn.modeling.box_coder import BoxCoder
+from lib.scene_parser.rcnn.modeling.utils import cat
+from lib.scene_parser.rcnn.structures.bounding_box import BoxList
+from lib.scene_parser.rcnn.structures.boxlist_ops import cat_boxlist
+from lib.scene_parser.rcnn.structures.boxlist_ops import boxlist_nms
+from lib.scene_parser.rcnn.structures.boxlist_ops import remove_small_boxes
 
 
 class RetinaNetPostProcessor(RPNPostProcessor):
