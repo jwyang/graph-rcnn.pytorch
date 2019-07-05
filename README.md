@@ -11,7 +11,7 @@ Pytorch code for our ECCV 2018 paper ["Graph R-CNN for Scene Graph Generation"](
 
 ## Introduction
 
-This project is a set of reimplemented representative scene graph generation models, including:
+This project is a set of reimplemented representative scene graph generation models based on Pytorch 1.0, including:
 * [Graph R-CNN for Scene Graph Generation](https://arxiv.org/pdf/1808.00191.pdf), our own. ECCV 2018.
 * [Scene Graph Generation by Iterative Message Passing](https://arxiv.org/pdf/1701.02426.pdf), Xu et al. CVPR 2017
 * [Scene Graph Generation from Objects, Phrases and Region Captions](https://arxiv.org/pdf/1707.09700.pdf), Li et al. ICCV 2017
