@@ -8,7 +8,7 @@ import cv2
 from .data.build import build_data_loader
 from .scene_parser.parser import build_scene_parser
 from .scene_parser.parser import build_scene_parser_optimizer
-from .scene_parser.mask_rcnn.utils.metric_logger import MetricLogger
+from .scene_parser.rcnn.utils.metric_logger import MetricLogger
 
 class SceneGraphGeneration:
     """

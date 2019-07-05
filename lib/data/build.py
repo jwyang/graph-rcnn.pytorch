@@ -6,7 +6,7 @@ from .vg_hdf5 import vg_hdf5
 from . import samplers
 from .transforms import build_transforms
 from .collate_batch import BatchCollator
-from lib.scene_parser.mask_rcnn.utils.comm import get_world_size
+from lib.scene_parser.rcnn.utils.comm import get_world_size
 
 def make_data_sampler(dataset, shuffle, distributed):
     if distributed:

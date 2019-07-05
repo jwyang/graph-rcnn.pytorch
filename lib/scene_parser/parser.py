@@ -6,11 +6,11 @@ import logging
 import torch
 import torch.nn as nn
 
-from .mask_rcnn.modeling.detector.generalized_rcnn import GeneralizedRCNN
-from .mask_rcnn.solver import make_lr_scheduler
-from .mask_rcnn.solver import make_optimizer
-from .mask_rcnn.utils.checkpoint import SceneParserCheckpointer
-from .mask_rcnn.structures.image_list import to_image_list
+from .rcnn.modeling.detector.generalized_rcnn import GeneralizedRCNN
+from .rcnn.solver import make_lr_scheduler
+from .rcnn.solver import make_optimizer
+from .rcnn.utils.checkpoint import SceneParserCheckpointer
+from .rcnn.structures.image_list import to_image_list
 
 class SceneParser(GeneralizedRCNN):
     "Scene Parser"

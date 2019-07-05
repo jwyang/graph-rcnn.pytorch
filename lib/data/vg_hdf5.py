@@ -7,7 +7,7 @@ from PIL import Image
 import h5py, json
 import torch
 from torch.utils.data import Dataset
-from lib.scene_parser.mask_rcnn.structures.bounding_box import BoxList
+from lib.scene_parser.rcnn.structures.bounding_box import BoxList
 
 class vg_hdf5(Dataset):
     def __init__(self, cfg, split="train", transforms=None, num_im=-1):
