@@ -32,7 +32,7 @@ The goal of gathering all these representative methods into a single repo is to 
 ## Checklist
 
 - [x] Faster R-CNN Baseline (:balloon: 2019-07-04)
-- [ ] Scene Graph Generation Baseline
+- [x] Scene Graph Generation Baseline (:balloon: 2019-07-06)
 - [ ] Iterative Message Passing (IMP)
 - [ ] Multi-level Scene Description Network (MSDN)
 - [ ] Neural Motif
