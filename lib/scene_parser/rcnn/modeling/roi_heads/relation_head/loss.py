@@ -52,7 +52,7 @@ class FastRCNNLossComputation(object):
                 match_ij = (match_i + match_j) / 2
                 match_ij.view(-1)[::match_quality_matrix.shape[1]] = 0
                 temp.append(match_ij)
-                boxi = target.bbox[i].clone(); boxj = target.bbox[j].clone()
+                boxi = target.bbox[i]; boxj = target.bbox[j]
                 box_pair = torch.cat((boxi, boxj), 0)
                 target_box_pairs.append(box_pair)
 
@@ -61,8 +61,8 @@ class FastRCNNLossComputation(object):
         target_pair = BoxPairList(target_box_pairs, target.size, target.mode)
         target_pair.add_field("labels", target.get_field("pred_labels").view(-1))
 
-        box_subj = proposal.bbox.clone()
-        box_obj = proposal.bbox.clone()
+        box_subj = proposal.bbox
+        box_obj = proposal.bbox
         box_subj = box_subj.unsqueeze(1).repeat(1, box_subj.shape[0], 1)
         box_obj = box_obj.unsqueeze(0).repeat(box_obj.shape[0], 1, 1)
         proposal_box_pairs = torch.cat((box_subj.view(-1, 4), box_obj.view(-1, 4)), 1)
