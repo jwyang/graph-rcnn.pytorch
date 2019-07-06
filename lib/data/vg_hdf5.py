@@ -129,3 +129,29 @@ class vg_hdf5(Dataset):
     def get_img_info(self, img_id):
         w, h = self.im_sizes[img_id, :]
         return {"height": h, "width": w}
+
+    def get_groundtruth(self, index):
+        i = index; assert(self.im_to_first_box[i] >= 0)
+        width, height = self.im_sizes[i, :]
+        # get object bounding boxes, labels and relations
+        obj_boxes = self.all_boxes[self.im_to_first_box[i]:self.im_to_last_box[i]+1,:]
+        obj_labels = self.labels[self.im_to_first_box[i]:self.im_to_last_box[i]+1]
+        obj_relations = np.zeros((obj_boxes.shape[0], obj_boxes.shape[0]))
+        if self.im_to_first_rel[i] >= 0: # if image has relations
+            predicates = self._relation_predicates[self.im_to_first_rel[i]
+                                         :self.im_to_last_rel[i]+1]
+            obj_idx = self._relations[self.im_to_first_rel[i]
+                                         :self.im_to_last_rel[i]+1]
+            obj_idx = obj_idx - self.im_to_first_box[i]
+            assert(np.all(obj_idx>=0) and np.all(obj_idx<obj_boxes.shape[0])) # sanity check
+            for j, p in enumerate(predicates):
+                # gt_relations.append([obj_idx[j][0], obj_idx[j][1], p])
+                obj_relations[obj_idx[j][0], obj_idx[j][1]] = p
+
+        target = BoxList(obj_boxes, (width, height), mode="xyxy")
+        target.add_field("labels", torch.from_numpy(obj_labels))
+        target.add_field("difficult", torch.from_numpy(obj_labels).clone().fill_(0))
+        return target
+
+    def map_class_id_to_class_name(self, class_id):
+        return self.ind_to_classes[class_id]

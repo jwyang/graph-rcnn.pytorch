@@ -77,7 +77,7 @@ def test(cfg, args, model=None):
         arguments = {}
         arguments["iteration"] = 0
         model = build_model(cfg, arguments, args.local_rank, args.distributed)
-    model.eval()
+    model.test(visualize=args.visualize)
 
 def main():
     ''' parse config file '''

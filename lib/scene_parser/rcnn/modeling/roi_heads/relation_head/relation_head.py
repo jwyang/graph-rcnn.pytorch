@@ -35,30 +35,27 @@ class ROIRelationHead(torch.nn.Module):
             losses (dict[Tensor]): During training, returns the losses for the
                 head. During testing, returns an empty dict.
         """
-        import pdb; pdb.set_trace()
         if self.training:
             # Faster R-CNN subsamples during training the proposals with a fixed
             # positive / negative ratio
             with torch.no_grad():
-                proposals = self.loss_evaluator.subsample(proposals, targets)
+                proposal_pairs = self.loss_evaluator.subsample(proposals, targets)
 
         # extract features that will be fed to the final classifier. The
         # feature_extractor generally corresponds to the pooler + heads
-        x = self.feature_extractor(features, proposals)
+        x = self.feature_extractor(features, proposal_pairs)
         # final classifier that converts the features into predictions
-        class_logits, box_regression = self.predictor(x)
+        class_logits = self.predictor(x)
 
         if not self.training:
-            result = self.post_processor((class_logits, box_regression), proposals)
+            result = self.post_processor((class_logits), proposal_pairs)
             return x, result, {}
 
-        loss_classifier, loss_box_reg = self.loss_evaluator(
-            [class_logits], [box_regression]
-        )
+        loss_pred_classifier = self.loss_evaluator([class_logits])
         return (
             x,
-            proposals,
-            dict(loss_classifier=loss_classifier, loss_box_reg=loss_box_reg),
+            proposal_pairs,
+            dict(loss_pred_classifier=loss_pred_classifier),
         )
 
 

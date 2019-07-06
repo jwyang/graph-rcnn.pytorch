@@ -11,24 +11,17 @@ class FastRCNNPredictor(nn.Module):
 
         num_inputs = in_channels
 
-        num_classes = config.MODEL.ROI_BOX_HEAD.NUM_CLASSES
+        num_classes = config.MODEL.ROI_RELATION_HEAD.NUM_CLASSES
         self.avgpool = nn.AdaptiveAvgPool2d(1)
         self.cls_score = nn.Linear(num_inputs, num_classes)
-        num_bbox_reg_classes = 2 if config.MODEL.CLS_AGNOSTIC_BBOX_REG else num_classes
-        self.bbox_pred = nn.Linear(num_inputs, num_bbox_reg_classes * 4)
-
         nn.init.normal_(self.cls_score.weight, mean=0, std=0.01)
         nn.init.constant_(self.cls_score.bias, 0)
-
-        nn.init.normal_(self.bbox_pred.weight, mean=0, std=0.001)
-        nn.init.constant_(self.bbox_pred.bias, 0)
 
     def forward(self, x):
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         cls_logit = self.cls_score(x)
-        bbox_pred = self.bbox_pred(x)
-        return cls_logit, bbox_pred
+        return cls_logit
 
 
 @registry.ROI_RELATION_PREDICTOR.register("FPNPredictor")

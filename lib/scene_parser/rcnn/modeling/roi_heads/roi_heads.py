@@ -24,6 +24,19 @@ class CombinedROIHeads(torch.nn.ModuleDict):
         # TODO rename x to roi_box_features, if it doesn't increase memory consumption
         x, detections, loss_box = self.box(features, proposals, targets)
         losses.update(loss_box)
+        if self.cfg.MODEL.RELATION_ON:
+            relation_features = features
+            # optimization: during training, if we share the feature extractor between
+            # the box and the relation heads, then we can reuse the features already computed
+            if (
+                self.training
+                and self.cfg.MODEL.ROI_RELATION_HEAD.SHARE_BOX_FEATURE_EXTRACTOR
+            ):
+                relation_features = x
+            # During training, self.box() will return the unaltered proposals as "detections"
+            # this makes the API consistent during training and testing
+            x, detection_pairs, loss_relation = self.relation(relation_features, detections, targets)
+            losses.update(loss_relation)
 
         return x, detections, losses
 

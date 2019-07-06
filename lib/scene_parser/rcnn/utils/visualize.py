@@ -61,7 +61,7 @@ def overlay_class_names(image, predictions, categories):
     """
     scores = predictions.get_field("scores").tolist()
     labels = predictions.get_field("labels").tolist()
-    labels = [categories[str(i)] for i in labels]
+    labels = [categories[i] for i in labels]
     boxes = predictions.bbox
 
     template = "{}: {:.2f}"

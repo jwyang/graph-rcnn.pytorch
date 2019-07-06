@@ -40,9 +40,14 @@ class ResNet50Conv5ROIFeatureExtractor(nn.Module):
         self.head = head
         self.out_channels = head.out_channels
 
-    def forward(self, x, proposals):
-        x = self.pooler(x, proposals)
-        x = self.head(x)
+    def forward(self, x, proposal_pairs):
+        # proposals_subj = [proposal_pair.copy_with_subject() for proposal_pair in proposal_pairs]
+        # proposals_obj = [proposal_pair.copy_with_object() for proposal_pair in proposal_pairs]
+        proposals_union = [proposal_pair.copy_with_union() for proposal_pair in proposal_pairs]
+        # x_subj = self.pooler(x, proposals_subj)
+        # x_obj = self.pooler(x, proposals_obj)
+        x_union = self.pooler(x, proposals_union)
+        x = self.head(x_union)
         return x
 
 
