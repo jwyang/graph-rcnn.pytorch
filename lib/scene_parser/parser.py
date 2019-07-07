@@ -12,12 +12,20 @@ from .rcnn.solver import make_optimizer
 from .rcnn.utils.checkpoint import SceneParserCheckpointer
 from .rcnn.structures.image_list import to_image_list
 from .rcnn.utils.comm import synchronize, get_rank
+from .imp.imp import IMP
+from .msdn.msdn import MSDN
+
+SCENE_PAESER_DICT = {"imp": IMP, "msdn": MSDN}
 
 class SceneParser(GeneralizedRCNN):
     "Scene Parser"
-    def __init__(self, opt):
-        GeneralizedRCNN.__init__(self, opt)
-        self.opt = opt
+    def __init__(self, cfg):
+        GeneralizedRCNN.__init__(self, cfg)
+        self.cfg = cfg
+
+        self.sg_heads = None
+        if self.cfg.MODEL.ALGORITHM in SCENE_PAESER_DICT:
+            self.sg_heads = SCENE_PAESER_DICT[self.cfg.MODEL.ALGORITHM](cfg, self.backbone.out_channels)
 
     def forward(self, images, targets=None):
         """
@@ -37,6 +45,9 @@ class SceneParser(GeneralizedRCNN):
         images = to_image_list(images)
         features = self.backbone(images.tensors)
         proposals, proposal_losses = self.rpn(images, features, targets)
+
+        if self.sg_heads:
+            x, result, scene_parser_losses = self.sg_heads(features, proposals, targets)
         if self.roi_heads:
             x, result, scene_parser_losses = self.roi_heads(features, proposals, targets)
         else:

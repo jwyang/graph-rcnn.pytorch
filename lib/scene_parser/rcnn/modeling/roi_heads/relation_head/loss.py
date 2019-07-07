@@ -68,6 +68,11 @@ class FastRCNNLossComputation(object):
         proposal_box_pairs = torch.cat((box_subj.view(-1, 4), box_obj.view(-1, 4)), 1)
         proposal_pairs = BoxPairList(proposal_box_pairs, proposal.size, proposal.mode)
 
+        idx_subj = torch.arange(box_subj.shape[0]).view(-1, 1, 1).repeat(1, box_obj.shape[0], 1).to(proposal.bbox.device)
+        idx_obj = torch.arange(box_obj.shape[0]).view(1, -1, 1).repeat(box_subj.shape[0], 1, 1).to(proposal.bbox.device)
+        proposal_idx_pairs = torch.cat((idx_subj.view(-1, 1), idx_obj.view(-1, 1)), 1)
+        proposal_pairs.add_field("idx_pairs", proposal_idx_pairs)
+
         # matched_idxs = self.proposal_matcher(match_quality_matrix)
         matched_idxs = self.proposal_pair_matcher(match_pair_quality_matrix)
 
