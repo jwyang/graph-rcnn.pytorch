@@ -13,6 +13,7 @@ from .scene_parser.rcnn.utils.timer import Timer, get_time_str
 from .scene_parser.rcnn.utils.comm import synchronize, all_gather, is_main_process, get_world_size
 from .scene_parser.rcnn.utils.visualize import select_top_predictions, overlay_boxes, overlay_class_names
 from .data.evaluation import evaluate, evaluate_sg
+from .utils.box import bbox_overlaps
 
 class SceneGraphGeneration:
     """
@@ -30,12 +31,50 @@ class SceneGraphGeneration:
         self.data_loader_train = build_data_loader(cfg, split="train", is_distributed=distributed)
         self.data_loader_test = build_data_loader(cfg, split="test", is_distributed=distributed)
 
+        if not os.path.exists("freq_prior.npy"):
+            freq_prior = self._get_freq_prior()
+            np.save("freq_prior.npy", freq_prior)
+        else:
+            freq_prior = np.load("freq_prior.npy")
+
+        self.freq_prior = freq_prior
+
         # build scene graph generation model
         self.scene_parser = build_scene_parser(cfg); self.scene_parser.to(self.device)
         self.sp_optimizer, self.sp_scheduler, self.sp_checkpointer, self.extra_checkpoint_data = \
             build_scene_parser_optimizer(cfg, self.scene_parser, local_rank=local_rank, distributed=distributed)
 
         self.arguments.update(self.extra_checkpoint_data)
+
+    def _get_freq_prior(self):
+        """
+        get the frequency prior for object-pair v.s. predicate
+        """
+        freq_prior = np.zeros((self.cfg.MODEL.ROI_BOX_HEAD.NUM_CLASSES,
+                              self.cfg.MODEL.ROI_BOX_HEAD.NUM_CLASSES,
+                              self.cfg.MODEL.ROI_RELATION_HEAD.NUM_CLASSES))
+
+        import pdb; pdb.set_trace()
+        for i in range(len(self.data_loader_train.dataset)):
+            target = self.data_loader_train.dataset.get_groundtruth(i)
+            boxes = target.bbox
+            overlaps = bbox_overlaps(boxes, boxes)
+            labels = target.get_field("labels")
+            pred_labels = target.get_field("pred_labels")
+            for m in range(pred_labels.size(0)):
+                for n in range(pred_labels.size(1)):
+                    if pred_labels[m, n] > 0:
+                        label_m = labels[m].item()
+                        label_n = labels[n].item()
+                        freq_prior[label_m, label_n][int(pred_labels[m, n].item())] += 1
+                    else:
+                        if overlaps[m, n] > 0 and m != n:
+                            freq_prior[label_m, label_n][0] += 1
+            if i % 20 == 0:
+                print("processing {}/{}".format(i, len(self.data_loader_train.dataset)))
+            if i >= len(self.data_loader_train.dataset):
+                break
+        return freq_prior
 
     def train(self):
         """
@@ -146,7 +185,6 @@ class SceneGraphGeneration:
         total_timer = Timer()
         inference_timer = Timer()
         total_timer.tic()
-        import pdb; pdb.set_trace()
         for i, data in enumerate(self.data_loader_test, 0):
             imgs, targets, image_ids = data
             imgs = imgs.to(self.device); targets = [target.to(self.device) for target in targets]
@@ -172,7 +210,6 @@ class SceneGraphGeneration:
                 results_pred_dict.update(
                     {img_id: result for img_id, result in zip(image_ids, output_pred)}
                 )
-
             if i > 1000:
                 break
         synchronize()

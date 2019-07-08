@@ -1,4 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+import numpy as np
 import torch
 from torch import nn
 
@@ -15,11 +16,18 @@ class ROIRelationHead(torch.nn.Module):
 
     def __init__(self, cfg, in_channels):
         super(ROIRelationHead, self).__init__()
+        self.cfg = cfg
         self.feature_extractor = make_roi_relation_feature_extractor(cfg, in_channels)
         self.predictor = make_roi_relation_predictor(
             cfg, self.feature_extractor.out_channels)
         self.post_processor = make_roi_relation_post_processor(cfg)
         self.loss_evaluator = make_roi_relation_loss_evaluator(cfg)
+
+        if self.cfg.MODEL.USE_FREQ_PRIOR:
+            freq_prior = torch.from_numpy(np.load("freq_prior.npy"))
+            freq_prior[:, :, 0] += 1
+            self.freq_dist = freq_prior / (freq_prior.sum(2).unsqueeze(2) + 1e-5)
+            self.freq_dist[:, :, 0] = 0
 
     def _get_proposal_pairs(self, proposals):
         proposal_pairs = []
@@ -59,17 +67,31 @@ class ROIRelationHead(torch.nn.Module):
             with torch.no_grad():
                 proposal_pairs = self.loss_evaluator.subsample(proposals, targets)
         else:
-            proposals = [proposal[:32] for proposal in proposals]
+            # proposals = [proposal[:32] for proposal in proposals]
             proposal_pairs = self._get_proposal_pairs(proposals)
 
-        # extract features that will be fed to the final classifier. The
-        # feature_extractor generally corresponds to the pooler + heads
-        x = self.feature_extractor(features, proposal_pairs)
-        # final classifier that converts the features into predictions
-        class_logits = self.predictor(x)
+        if self.cfg.MODEL.USE_FREQ_PRIOR:
+            """
+            if use frequency prior, we directly use the statistics
+            """
+            x = None
+            class_logits = []
+            for proposal_per_image in proposals:
+                obj_labels = proposal_per_image.get_field("labels")
+                for subj_label in obj_labels:
+                    for obj_label in obj_labels:
+                        class_logit = self.freq_dist[subj_label.item(), obj_label.item()]
+                        class_logits.append(class_logit)
+            class_logits = torch.stack(class_logits, 0)
+        else:
+            # extract features that will be fed to the final classifier. The
+            # feature_extractor generally corresponds to the pooler + heads
+            x = self.feature_extractor(features, proposal_pairs)
+            # final classifier that converts the features into predictions
+            class_logits = self.predictor(x)
 
         if not self.training:
-            result = self.post_processor((class_logits), proposal_pairs)
+            result = self.post_processor((class_logits), proposal_pairs, use_freq_prior=self.cfg.MODEL.USE_FREQ_PRIOR)
             return x, result, {}
 
         loss_pred_classifier = self.loss_evaluator([class_logits])

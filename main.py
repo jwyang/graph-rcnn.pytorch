@@ -87,6 +87,7 @@ def main():
     parser.add_argument("--local_rank", type=int, default=0)
     parser.add_argument("--resume", type=int, default=0)
     parser.add_argument("--inference", action='store_true')
+    parser.add_argument("--use_freq_prior", action='store_true')
     parser.add_argument("--visualize", action='store_true')
     args = parser.parse_args()
 
@@ -101,6 +102,7 @@ def main():
 
     cfg.merge_from_file(args.config_file)
     cfg.resume = args.resume
+    cfg.MODEL.USE_FREQ_PRIOR = args.use_freq_prior
     cfg.freeze()
 
     if not os.path.exists("logs"):

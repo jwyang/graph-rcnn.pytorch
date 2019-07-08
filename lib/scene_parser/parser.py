@@ -26,7 +26,7 @@ class SceneParser(GeneralizedRCNN):
         self.sg_heads = None
         if self.cfg.MODEL.ALGORITHM in SCENE_PAESER_DICT:
             self.sg_heads = SCENE_PAESER_DICT[self.cfg.MODEL.ALGORITHM](cfg, self.backbone.out_channels)
-
+        
     def forward(self, images, targets=None):
         """
         Arguments:

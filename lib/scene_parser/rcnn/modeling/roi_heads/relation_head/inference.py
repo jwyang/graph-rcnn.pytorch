@@ -43,7 +43,7 @@ class PostProcessor(nn.Module):
         self.cls_agnostic_bbox_reg = cls_agnostic_bbox_reg
         self.bbox_aug_enabled = bbox_aug_enabled
 
-    def forward(self, x, boxes):
+    def forward(self, x, boxes, use_freq_prior=False):
         """
         Arguments:
             x (tuple[tensor, tensor]): x contains the class logits
@@ -56,7 +56,7 @@ class PostProcessor(nn.Module):
                 the extra fields labels and scores
         """
         class_logits = x
-        class_prob = F.softmax(class_logits, -1)
+        class_prob = class_logits if use_freq_prior else F.softmax(class_logits, -1)
 
         # TODO think about a representation of batch of boxes
         image_shapes = [box.size for box in boxes]
