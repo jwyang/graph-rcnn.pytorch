@@ -6,7 +6,7 @@ from .roi_relation_feature_extractors import make_roi_relation_feature_extractor
 from .roi_relation_predictors import make_roi_relation_predictor
 from .inference import make_roi_relation_post_processor
 from .loss import make_roi_relation_loss_evaluator
-
+from lib.scene_parser.rcnn.structures.bounding_box_pair import BoxPairList
 
 class ROIRelationHead(torch.nn.Module):
     """
@@ -20,6 +20,24 @@ class ROIRelationHead(torch.nn.Module):
             cfg, self.feature_extractor.out_channels)
         self.post_processor = make_roi_relation_post_processor(cfg)
         self.loss_evaluator = make_roi_relation_loss_evaluator(cfg)
+
+    def _get_proposal_pairs(self, proposals):
+        proposal_pairs = []
+        for i, proposals_per_image in enumerate(proposals):
+            box_subj = proposals_per_image.bbox
+            box_obj = proposals_per_image.bbox
+            box_subj = box_subj.unsqueeze(1).repeat(1, box_subj.shape[0], 1)
+            box_obj = box_obj.unsqueeze(0).repeat(box_obj.shape[0], 1, 1)
+            proposal_box_pairs = torch.cat((box_subj.view(-1, 4), box_obj.view(-1, 4)), 1)
+            proposal_pairs_per_image = BoxPairList(proposal_box_pairs, proposals_per_image.size, proposals_per_image.mode)
+
+            idx_subj = torch.arange(box_subj.shape[0]).view(-1, 1, 1).repeat(1, box_obj.shape[0], 1).to(proposals_per_image.bbox.device)
+            idx_obj = torch.arange(box_obj.shape[0]).view(1, -1, 1).repeat(box_subj.shape[0], 1, 1).to(proposals_per_image.bbox.device)
+            proposal_idx_pairs = torch.cat((idx_subj.view(-1, 1), idx_obj.view(-1, 1)), 1)
+            proposal_pairs_per_image.add_field("idx_pairs", proposal_idx_pairs)
+
+            proposal_pairs.append(proposal_pairs_per_image)
+        return proposal_pairs
 
     def forward(self, features, proposals, targets=None):
         """
@@ -40,6 +58,9 @@ class ROIRelationHead(torch.nn.Module):
             # positive / negative ratio
             with torch.no_grad():
                 proposal_pairs = self.loss_evaluator.subsample(proposals, targets)
+        else:
+            proposals = [proposal[:32] for proposal in proposals]
+            proposal_pairs = self._get_proposal_pairs(proposals)
 
         # extract features that will be fed to the final classifier. The
         # feature_extractor generally corresponds to the pooler + heads

@@ -150,6 +150,7 @@ class vg_hdf5(Dataset):
 
         target = BoxList(obj_boxes, (width, height), mode="xyxy")
         target.add_field("labels", torch.from_numpy(obj_labels))
+        target.add_field("pred_labels", torch.from_numpy(obj_relations))        
         target.add_field("difficult", torch.from_numpy(obj_labels).clone().fill_(0))
         return target
 

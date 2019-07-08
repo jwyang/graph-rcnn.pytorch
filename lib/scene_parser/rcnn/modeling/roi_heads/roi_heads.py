@@ -35,8 +35,10 @@ class CombinedROIHeads(torch.nn.ModuleDict):
                 relation_features = x
             # During training, self.box() will return the unaltered proposals as "detections"
             # this makes the API consistent during training and testing
-            x, detection_pairs, loss_relation = self.relation(relation_features, detections, targets)
+            x_pairs, detection_pairs, loss_relation = self.relation(relation_features, detections, targets)
             losses.update(loss_relation)
+            
+            return (x, x_pairs), (detections, detection_pairs), losses
 
         return x, detections, losses
 

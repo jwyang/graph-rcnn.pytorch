@@ -7,6 +7,7 @@ from lib.scene_parser.rcnn.structures.bounding_box import BoxList
 from lib.scene_parser.rcnn.structures.boxlist_ops import boxlist_nms
 from lib.scene_parser.rcnn.structures.boxlist_ops import cat_boxlist
 from lib.scene_parser.rcnn.modeling.box_coder import BoxCoder
+from lib.scene_parser.rcnn.structures.bounding_box_pair import BoxPairList
 
 
 class PostProcessor(nn.Module):
@@ -54,39 +55,27 @@ class PostProcessor(nn.Module):
             results (list[BoxList]): one BoxList for each image, containing
                 the extra fields labels and scores
         """
-        class_logits, box_regression = x
+        class_logits = x
         class_prob = F.softmax(class_logits, -1)
 
         # TODO think about a representation of batch of boxes
         image_shapes = [box.size for box in boxes]
         boxes_per_image = [len(box) for box in boxes]
-        concat_boxes = torch.cat([a.bbox for a in boxes], dim=0)
-
-        if self.cls_agnostic_bbox_reg:
-            box_regression = box_regression[:, -4:]
-        proposals = self.box_coder.decode(
-            box_regression.view(sum(boxes_per_image), -1), concat_boxes
-        )
-        if self.cls_agnostic_bbox_reg:
-            proposals = proposals.repeat(1, class_prob.shape[1])
 
         num_classes = class_prob.shape[1]
 
-        proposals = proposals.split(boxes_per_image, dim=0)
+        proposals = boxes
         class_prob = class_prob.split(boxes_per_image, dim=0)
 
         results = []
         for prob, boxes_per_img, image_shape in zip(
             class_prob, proposals, image_shapes
         ):
-            boxlist = self.prepare_boxlist(boxes_per_img, prob, image_shape)
-            boxlist = boxlist.clip_to_image(remove_empty=False)
-            if not self.bbox_aug_enabled:  # If bbox aug is enabled, we will do it later
-                boxlist = self.filter_results(boxlist, num_classes)
-            results.append(boxlist)
+            boxes_per_img.add_field("scores", prob)
+            results.append(boxes_per_img)
         return results
 
-    def prepare_boxlist(self, boxes, scores, image_shape):
+    def prepare_boxpairlist(self, boxes, scores, image_shape):
         """
         Returns BoxList from `boxes` and adds probability scores information
         as an extra field
@@ -99,9 +88,9 @@ class PostProcessor(nn.Module):
         dataset (including the background class). `scores[i, j]`` corresponds to the
         box at `boxes[i, j * 4:(j + 1) * 4]`.
         """
-        boxes = boxes.reshape(-1, 4)
+        boxes = boxes.reshape(-1, 8)
         scores = scores.reshape(-1)
-        boxlist = BoxList(boxes, image_shape, mode="xyxy")
+        boxlist = BoxPairList(boxes, image_shape, mode="xyxy")
         boxlist.add_field("scores", scores)
         return boxlist
 

@@ -34,7 +34,7 @@ class ROIBoxHead(torch.nn.Module):
                 are returned. During testing, the predicted boxlists are returned
             losses (dict[Tensor]): During training, returns the losses for the
                 head. During testing, returns an empty dict.
-        """
+        """        
         if self.training:
             # Faster R-CNN subsamples during training the proposals with a fixed
             # positive / negative ratio

@@ -12,7 +12,7 @@ from .scene_parser.rcnn.utils.metric_logger import MetricLogger
 from .scene_parser.rcnn.utils.timer import Timer, get_time_str
 from .scene_parser.rcnn.utils.comm import synchronize, all_gather, is_main_process, get_world_size
 from .scene_parser.rcnn.utils.visualize import select_top_predictions, overlay_boxes, overlay_class_names
-from .data.evaluation import evaluate
+from .data.evaluation import evaluate, evaluate_sg
 
 class SceneGraphGeneration:
     """
@@ -140,10 +140,13 @@ class SceneGraphGeneration:
         logger.info("Start evaluating")
         self.scene_parser.eval()
         results_dict = {}
+        if self.cfg.MODEL.RELATION_ON:
+            results_pred_dict = {}
         cpu_device = torch.device("cpu")
         total_timer = Timer()
         inference_timer = Timer()
         total_timer.tic()
+        import pdb; pdb.set_trace()
         for i, data in enumerate(self.data_loader_test, 0):
             imgs, targets, image_ids = data
             imgs = imgs.to(self.device); targets = [target.to(self.device) for target in targets]
@@ -153,6 +156,9 @@ class SceneGraphGeneration:
                 if timer:
                     timer.tic()
                 output = self.scene_parser(imgs)
+                if self.cfg.MODEL.RELATION_ON:
+                    output, output_pred = output
+                    output_pred = [o.to(cpu_device) for o in output_pred]
                 if timer:
                     torch.cuda.synchronize()
                     timer.toc()
@@ -162,8 +168,13 @@ class SceneGraphGeneration:
             results_dict.update(
                 {img_id: result for img_id, result in zip(image_ids, output)}
             )
-            # if i > 100:
-            #     break
+            if self.cfg.MODEL.RELATION_ON:
+                results_pred_dict.update(
+                    {img_id: result for img_id, result in zip(image_ids, output_pred)}
+                )
+
+            if i > 1000:
+                break
         synchronize()
         total_time = total_timer.toc()
         total_time_str = get_time_str(total_time)
@@ -182,6 +193,8 @@ class SceneGraphGeneration:
             )
         )
         predictions = self._accumulate_predictions_from_multiple_gpus(results_dict)
+        if self.cfg.MODEL.RELATION_ON:
+            predictions_pred = self._accumulate_predictions_from_multiple_gpus(results_pred_dict)
         if not is_main_process():
             return
 
@@ -190,6 +203,8 @@ class SceneGraphGeneration:
             if not os.path.exists(output_folder):
                 os.mkdir(output_folder)
             torch.save(predictions, os.path.join(output_folder, "predictions.pth"))
+            if self.cfg.MODEL.RELATION_ON:
+                torch.save(predictions_pred, os.path.join(output_folder, "predictions_pred.pth"))
 
         extra_args = dict(
             box_only=False if self.cfg.MODEL.RETINANET_ON else self.cfg.MODEL.RPN_ONLY,
@@ -197,10 +212,17 @@ class SceneGraphGeneration:
             expected_results=self.cfg.TEST.EXPECTED_RESULTS,
             expected_results_sigma_tol=self.cfg.TEST.EXPECTED_RESULTS_SIGMA_TOL,
         )
-        return evaluate(dataset=self.data_loader_test.dataset,
+        eval_det_results = evaluate(dataset=self.data_loader_test.dataset,
                         predictions=predictions,
                         output_folder=output_folder,
                         **extra_args)
+
+        if self.cfg.MODEL.RELATION_ON:
+            eval_sg_results = evaluate_sg(dataset=self.data_loader_test.dataset,
+                            predictions=predictions,
+                            predictions_pred=predictions_pred,
+                            output_folder=output_folder,
+                            **extra_args)
 
 def build_model(cfg, arguments, local_rank, distributed):
     return SceneGraphGeneration(cfg, arguments, local_rank, distributed)
