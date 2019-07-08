@@ -78,11 +78,9 @@ class ROIRelationHead(torch.nn.Module):
             class_logits = []
             for proposal_per_image in proposals:
                 obj_labels = proposal_per_image.get_field("labels")
-                for subj_label in obj_labels:
-                    for obj_label in obj_labels:
-                        class_logit = self.freq_dist[subj_label.item(), obj_label.item()]
-                        class_logits.append(class_logit)
-            class_logits = torch.stack(class_logits, 0)
+                class_logits_per_image = self.freq_dist[obj_labels, :][:, obj_labels].view(-1, self.freq_dist.size(-1))
+                class_logits.append(class_logits_per_image)
+            class_logits = torch.cat(class_logits, 0)
         else:
             # extract features that will be fed to the final classifier. The
             # feature_extractor generally corresponds to the pooler + heads
