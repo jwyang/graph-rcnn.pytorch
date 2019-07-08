@@ -35,6 +35,6 @@ The goal of gathering all these representative methods into a single repo is to 
 - [x] Scene Graph Generation Baseline (:balloon: 2019-07-06)
 - [x] Iterative Message Passing (IMP) (:balloon: 2019-07-07)
 - [ ] Multi-level Scene Description Network (MSDN)
-- [ ] Neural Motif (Frequency Prior)
+- [x] Neural Motif (Frequency Prior) (:balloon: 2019-07-08)
 - [ ] Neural Motif
 - [ ] Graph R-CNN
