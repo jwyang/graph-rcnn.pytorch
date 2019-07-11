@@ -43,11 +43,11 @@ The goal of gathering all these representative methods into a single repo is to 
 
 ### Object Detection
 
-backbone | model | batch size | base_lr | lr_decay_step | max_iter | mAP@0.5 | mAP@0.50:0.95
+backbone | model | batch size | lr | lr_decay_step | max_iter | mAP@0.5 | mAP@0.50:0.95
 --------|--------|--------|--------|---------|--------|--------|--------
 Resnet-101 | faster r-cnn | 6 | 5e-3 | (70k, 90k) | 100k | - | -
 
 ### Scene Graph Generation
-backbone | model | batch size | base_lr | lr_decay_step | max_iter | sgdet@20 | sgdet@50 | sgdet@100
+backbone | model | batch size | lr | lr_decay_step | max_iter | sgdet@20 | sgdet@50 | sgdet@100
 --------|--------|--------|---------|--------|--------|--------|---------|---------
 Resnet-101 | vanilla | 6 | 5e-3 | (70k,90k) | 100k | - | - | -
