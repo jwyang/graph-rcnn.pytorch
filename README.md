@@ -52,4 +52,4 @@ backbone | model | bs | lr | lr_decay_step | max_iter | sgdet@20 | sgdet@50 | sg
 --------|--------|--------|---------|--------|--------|--------|---------|---------
 Resnet-101 | vanilla | 6 | 5e-3 | (70k, 90k) | 100k | 10.4 | 14.3 | 16.8
 Resnet-101 | frequency | 6 | 5e-3 | (70k, 90k) | 100k | 19.4 | 25.0 | 28.5
-Resnet-101 | freq-overlap | 6 | 5e-3 | (70k, 90k) | 100k | - | - | -
+<!-- Resnet-101 | freq-overlap | 6 | 5e-3 | (70k, 90k) | 100k | - | - | - -->
