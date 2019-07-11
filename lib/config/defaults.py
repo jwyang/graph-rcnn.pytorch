@@ -10,6 +10,7 @@ _C = CN()
 _C.DATASET = CN()
 _C.DATASET.NAME = "vg"
 _C.DATASET.MODE = "benchmark"                    # dataset mode, benchmark | 1600-400-400 | 2500-600-400, etc
+_C.DATASET.PATH = "datasets/vg_bm"
 _C.DATASET.LOADER = 'object'                     # which kind of data loader to use, object | object+attribute | object+attribute+relationship
 _C.DATASET.TRAIN_BATCH_SIZE = 4
 _C.DATASET.TEST_BATCH_SIZE = 4

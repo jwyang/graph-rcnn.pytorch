@@ -1,4 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Relation head for predicting relationship between object pairs.
+# Written by Jianwei Yang (jw2yang@gatech.edu).
 import numpy as np
 import torch
 from torch import nn
@@ -23,13 +25,9 @@ class ROIRelationHead(torch.nn.Module):
         self.post_processor = make_roi_relation_post_processor(cfg)
         self.loss_evaluator = make_roi_relation_loss_evaluator(cfg)
 
+        self.freq_dist = None
         if self.cfg.MODEL.USE_FREQ_PRIOR:
-            # freq_prior = torch.from_numpy(np.load("freq_prior.npy"))
-            # freq_prior[:, :, 0] += 1
-            # self.freq_dist = freq_prior / (freq_prior.sum(2).unsqueeze(2) + 1e-5)
-            # self.freq_dist[:, :, 0] = 0
-
-            self.freq_dist = torch.from_numpy(np.load("pred_stats.npy"))
+            self.freq_dist = torch.from_numpy(np.load("freq_prior.npy"))
             self.freq_dist[:, :, 0] = 0
 
     def _get_proposal_pairs(self, proposals):

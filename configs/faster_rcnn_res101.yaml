@@ -1,6 +1,7 @@
 DATASET:
   NAME: "vg"
   MODE: "benchmark"
+  PATH: "datasets/vg_bm"
   TRAIN_BATCH_SIZE: 6
   TEST_BATCH_SIZE: 1
 MODEL:

@@ -35,6 +35,19 @@ The goal of gathering all these representative methods into a single repo is to 
 - [x] Scene Graph Generation Baseline (:balloon: 2019-07-06)
 - [x] Iterative Message Passing (IMP) (:balloon: 2019-07-07)
 - [ ] Multi-level Scene Description Network (MSDN)
-- [x] Neural Motif (Frequency Prior) (:balloon: 2019-07-08)
+- [x] Neural Motif (Frequency Prior Baseline) (:balloon: 2019-07-08)
 - [ ] Neural Motif
 - [ ] Graph R-CNN
+
+## Benchmarking
+
+### Object Detection
+
+backbone | model | #GPUs | batch size | base_lr | lr_decay_step | max_iter | mAP@0.5 | mAP@0.50:0.95
+--------|--------|--------|--------|---------|--------|--------|--------|---------
+Res101 | faster r-cnn | 6 | 6 | 5e-3 | (70k,90k) | 100k | - | -
+
+### Scene Graph Generation
+backbone | model | #GPUs | batch size | base_lr | lr_decay_step | max_iter | sgdet@20 | sgdet@50 | sgdet@100
+--------|--------|--------|---------|--------|--------|--------|---------|---------
+Res101 | vanilla | 6 | 6 | 5e-3 | (70k,90k) | 100k | - | - | -

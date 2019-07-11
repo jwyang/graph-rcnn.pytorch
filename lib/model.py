@@ -31,13 +31,20 @@ class SceneGraphGeneration:
         self.data_loader_train = build_data_loader(cfg, split="train", is_distributed=distributed)
         self.data_loader_test = build_data_loader(cfg, split="test", is_distributed=distributed)
 
-        if not os.path.exists("freq_prior.npy"):
-            freq_prior = self._get_freq_prior()
-            np.save("freq_prior.npy", freq_prior)
-        else:
-            freq_prior = np.load("freq_prior.npy")
+        logger = logging.getLogger("scene_graph_generation.trainer")
+        logger.info("Train data size: {}".format(len(self.data_loader_train.dataset)))
+        logger.info("Test data size: {}".format(len(self.data_loader_test.dataset)))
 
-        self.freq_prior = freq_prior
+        if not os.path.exists("freq_prior.npy"):
+            logger.info("Computing frequency prior matrix...")
+            fg_matrix, bg_matrix = self._get_freq_prior()
+            prob_matrix = fg_matrix.astype(np.float32)
+            prob_matrix[:,:,0] = bg_matrix
+
+            prob_matrix[:,:,0] += 1
+            prob_matrix /= np.sum(prob_matrix, 2)[:,:,None]
+            # prob_matrix /= float(fg_matrix.max())
+            np.save("freq_prior.npy", prob_matrix)
 
         # build scene graph generation model
         self.scene_parser = build_scene_parser(cfg); self.scene_parser.to(self.device)
@@ -46,34 +53,59 @@ class SceneGraphGeneration:
 
         self.arguments.update(self.extra_checkpoint_data)
 
-    def _get_freq_prior(self):
-        """
-        get the frequency prior for object-pair v.s. predicate
-        """
-        freq_prior = np.zeros((self.cfg.MODEL.ROI_BOX_HEAD.NUM_CLASSES,
-                              self.cfg.MODEL.ROI_BOX_HEAD.NUM_CLASSES,
-                              self.cfg.MODEL.ROI_RELATION_HEAD.NUM_CLASSES))
+    def _get_freq_prior(self, must_overlap=False):
 
-        for i in range(len(self.data_loader_train.dataset)):
-            target = self.data_loader_train.dataset.get_groundtruth(i)
-            boxes = target.bbox
-            overlaps = bbox_overlaps(boxes, boxes)
-            labels = target.get_field("labels")
-            pred_labels = target.get_field("pred_labels")
-            for m in range(pred_labels.size(0)):
-                for n in range(pred_labels.size(1)):
-                    if pred_labels[m, n] > 0:
-                        label_m = labels[m].item()
-                        label_n = labels[n].item()
-                        freq_prior[label_m, label_n][int(pred_labels[m, n].item())] += 1
-                    else:
-                        if overlaps[m, n] > 0 and m != n:
-                            freq_prior[label_m, label_n][0] += 1
-            if i % 20 == 0:
-                print("processing {}/{}".format(i, len(self.data_loader_train.dataset)))
-            if i >= len(self.data_loader_train.dataset):
-                break
-        return freq_prior
+        fg_matrix = np.zeros((
+            self.cfg.MODEL.ROI_BOX_HEAD.NUM_CLASSES,
+            self.cfg.MODEL.ROI_BOX_HEAD.NUM_CLASSES,
+            self.cfg.MODEL.ROI_RELATION_HEAD.NUM_CLASSES
+            ), dtype=np.int64)
+
+        bg_matrix = np.zeros((
+            self.cfg.MODEL.ROI_BOX_HEAD.NUM_CLASSES,
+            self.cfg.MODEL.ROI_BOX_HEAD.NUM_CLASSES,
+        ), dtype=np.int64)
+
+        for ex_ind in range(len(self.data_loader_train.dataset)):
+            gt_classes = self.data_loader_train.dataset.gt_classes[ex_ind].copy()
+            gt_relations = self.data_loader_train.dataset.relationships[ex_ind].copy()
+            gt_boxes = self.data_loader_train.dataset.gt_boxes[ex_ind].copy()
+
+            # For the foreground, we'll just look at everything
+            o1o2 = gt_classes[gt_relations[:, :2]]
+            for (o1, o2), gtr in zip(o1o2, gt_relations[:,2]):
+                fg_matrix[o1, o2, gtr] += 1
+
+            # For the background, get all of the things that overlap.
+            o1o2_total = gt_classes[np.array(
+                self._box_filter(gt_boxes, must_overlap=must_overlap), dtype=int)]
+            for (o1, o2) in o1o2_total:
+                bg_matrix[o1, o2] += 1
+
+            if ex_ind % 20 == 0:
+                print("processing {}/{}".format(ex_ind, len(self.data_loader_train.dataset)))
+
+        return fg_matrix, bg_matrix
+
+    def _box_filter(self, boxes, must_overlap=False):
+        """ Only include boxes that overlap as possible relations.
+        If no overlapping boxes, use all of them."""
+        n_cands = boxes.shape[0]
+
+        overlaps = bbox_overlaps(torch.from_numpy(boxes.astype(np.float)), torch.from_numpy(boxes.astype(np.float))).numpy() > 0
+        np.fill_diagonal(overlaps, 0)
+
+        all_possib = np.ones_like(overlaps, dtype=np.bool)
+        np.fill_diagonal(all_possib, 0)
+
+        if must_overlap:
+            possible_boxes = np.column_stack(np.where(overlaps))
+
+            if possible_boxes.size == 0:
+                possible_boxes = np.column_stack(np.where(all_possib))
+        else:
+            possible_boxes = np.column_stack(np.where(all_possib))
+        return possible_boxes
 
     def train(self):
         """
@@ -260,7 +292,7 @@ class SceneGraphGeneration:
                         predictions=predictions,
                         output_folder=output_folder,
                         **extra_args)
-        
+
         if self.cfg.MODEL.RELATION_ON:
             eval_sg_results = evaluate_sg(dataset=self.data_loader_test.dataset,
                             predictions=predictions,
