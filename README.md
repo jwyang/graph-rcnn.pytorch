@@ -51,3 +51,5 @@ Resnet-101 | faster r-cnn | 6 | 5e-3 | (70k, 90k) | 100k | - | -
 backbone | model | bs | lr | lr_decay_step | max_iter | sgdet@20 | sgdet@50 | sgdet@100
 --------|--------|--------|---------|--------|--------|--------|---------|---------
 Resnet-101 | vanilla | 6 | 5e-3 | (70k, 90k) | 100k | - | - | -
+Resnet-101 | frequency | 6 | 5e-3 | (70k, 90k) | 100k | - | - | -
+Resnet-101 | freq-overlap | 6 | 5e-3 | (70k, 90k) | 100k | - | - | -
