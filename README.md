@@ -49,5 +49,5 @@ Resnet-101 | faster r-cnn | 6 | 5e-3 | (70k, 90k) | 100k | - | -
 
 ### Scene Graph Generation
 backbone | model | batch size | base_lr | lr_decay_step | max_iter | sgdet@20 | sgdet@50 | sgdet@100
---------|--------|--------|---------|--------|--------|--------|---------|---------|---------
+--------|--------|--------|---------|--------|--------|--------|---------|---------s
 Resnet-101 | vanilla | 6 | 5e-3 | (70k,90k) | 100k | - | - | -
