@@ -71,7 +71,7 @@ def prepare_for_coco_detection(predictions, dataset):
     # assert isinstance(dataset, COCODataset)
     coco_results = []
     for image_id, prediction in enumerate(predictions):
-        original_id = dataset.id_to_img_map[image_id]
+        original_id = image_id # dataset.id_to_img_map[image_id]
         if len(prediction) == 0:
             continue
 
@@ -85,7 +85,7 @@ def prepare_for_coco_detection(predictions, dataset):
         scores = prediction.get_field("scores").tolist()
         labels = prediction.get_field("labels").tolist()
 
-        mapped_labels = [dataset.contiguous_category_id_to_json_id[i] for i in labels]
+        mapped_labels = [i for i in labels]
 
         coco_results.extend(
             [
@@ -221,7 +221,7 @@ def evaluate_box_proposals(
     num_pos = 0
 
     for image_id, prediction in enumerate(predictions):
-        original_id = dataset.id_to_img_map[image_id]
+        original_id = image_id # dataset.id_to_img_map[image_id]
 
         img_info = dataset.get_img_info(image_id)
         image_width = img_info["width"]
@@ -315,8 +315,10 @@ def evaluate_predictions_on_coco(
 
     coco_dt = coco_gt.loadRes(str(json_result_file)) if coco_results else COCO()
 
+    imgIds = list(set([coco_result['image_id'] for coco_result in coco_results]))
     # coco_dt = coco_gt.loadRes(coco_results)
     coco_eval = COCOeval(coco_gt, coco_dt, iou_type)
+    coco_eval.params.imgIds = imgIds
     coco_eval.evaluate()
     coco_eval.accumulate()
     coco_eval.summarize()

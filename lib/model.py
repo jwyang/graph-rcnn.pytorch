@@ -54,7 +54,6 @@ class SceneGraphGeneration:
                               self.cfg.MODEL.ROI_BOX_HEAD.NUM_CLASSES,
                               self.cfg.MODEL.ROI_RELATION_HEAD.NUM_CLASSES))
 
-        import pdb; pdb.set_trace()
         for i in range(len(self.data_loader_train.dataset)):
             target = self.data_loader_train.dataset.get_groundtruth(i)
             boxes = target.bbox
@@ -178,6 +177,7 @@ class SceneGraphGeneration:
         logger = logging.getLogger("scene_graph_generation.inference")
         logger.info("Start evaluating")
         self.scene_parser.eval()
+        targets_dict = {}
         results_dict = {}
         if self.cfg.MODEL.RELATION_ON:
             results_pred_dict = {}
@@ -185,6 +185,7 @@ class SceneGraphGeneration:
         total_timer = Timer()
         inference_timer = Timer()
         total_timer.tic()
+        reg_recalls = []
         for i, data in enumerate(self.data_loader_test, 0):
             imgs, targets, image_ids = data
             imgs = imgs.to(self.device); targets = [target.to(self.device) for target in targets]
@@ -197,6 +198,9 @@ class SceneGraphGeneration:
                 if self.cfg.MODEL.RELATION_ON:
                     output, output_pred = output
                     output_pred = [o.to(cpu_device) for o in output_pred]
+                ious = bbox_overlaps(targets[0].bbox, output[0].bbox)
+                reg_recall = (ious.max(1)[0] > 0.5).sum().item() / ious.shape[0]
+                reg_recalls.append(reg_recall)
                 if timer:
                     torch.cuda.synchronize()
                     timer.toc()
@@ -205,6 +209,9 @@ class SceneGraphGeneration:
                     self.visualize_detection(self.data_loader_test.dataset, image_ids, imgs, output)
             results_dict.update(
                 {img_id: result for img_id, result in zip(image_ids, output)}
+            )
+            targets_dict.update(
+                {img_id: target for img_id, target in zip(image_ids, targets)}
             )
             if self.cfg.MODEL.RELATION_ON:
                 results_pred_dict.update(
@@ -253,7 +260,7 @@ class SceneGraphGeneration:
                         predictions=predictions,
                         output_folder=output_folder,
                         **extra_args)
-
+        
         if self.cfg.MODEL.RELATION_ON:
             eval_sg_results = evaluate_sg(dataset=self.data_loader_test.dataset,
                             predictions=predictions,

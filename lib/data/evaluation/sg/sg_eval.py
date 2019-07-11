@@ -1,15 +1,16 @@
 import numpy as np
 import torch
+from .evaluator import BasicSceneGraphEvaluator
 
 def do_sg_evaluation(dataset, predictions, predictions_pred, output_folder, logger):
     """
     scene graph generation evaluation
     """
 
-    import pdb; pdb.set_trace()
+    evaluator = BasicSceneGraphEvaluator.all_modes(multiple_preds=False)
 
     top_Ns = [20, 50, 100]
-    modes = ["sg_det"]
+    modes = ["sgdet"]
     result_dict = {}
 
     for mode in modes:
@@ -18,15 +19,50 @@ def do_sg_evaluation(dataset, predictions, predictions_pred, output_folder, logg
             img_info = dataset.get_img_info(image_id)
             image_width = img_info["width"]
             image_height = img_info["height"]
+
             gt_boxlist = dataset.get_groundtruth(image_id)
 
+            gt_entry = {
+                'gt_classes': gt_boxlist.get_field("labels").numpy(),
+                'gt_relations': gt_boxlist.get_field("relation_labels").numpy().astype(int),
+                'gt_boxes': gt_boxlist.bbox.numpy(),
+            }
+
             prediction = prediction.resize((image_width, image_height))
+
+            obj_scores = prediction.get_field("scores").numpy()
+            all_rels = prediction_pred.get_field("idx_pairs").numpy()
+            fp_pred = prediction_pred.get_field("scores").numpy()
+            multiplier = np.ones((obj_scores.shape[0], obj_scores.shape[0]))
+            np.fill_diagonal(multiplier, 0)
+            fp_pred = fp_pred * multiplier.reshape(obj_scores.shape[0] * obj_scores.shape[0], 1)
+            scores = np.column_stack((
+                obj_scores[all_rels[:,0]],
+                obj_scores[all_rels[:,1]],
+                fp_pred.max(1)
+            )).prod(1)
+            sorted_inds = np.argsort(-scores)
+            sorted_inds = sorted_inds[scores[sorted_inds] > 0] #[:100]
+
+            pred_entry = {
+                'pred_boxes': prediction.bbox.numpy(),
+                'pred_classes': prediction.get_field("labels").numpy(),
+                'obj_scores': prediction.get_field("scores").numpy(),
+                'pred_rel_inds': all_rels[sorted_inds],
+                'rel_scores': fp_pred[sorted_inds],
+            }
+
+            evaluator[mode].evaluate_scene_graph_entry(
+                gt_entry,
+                pred_entry,
+            )
 
             evaluate(gt_boxlist.get_field("labels"), gt_boxlist.bbox, gt_boxlist.get_field("pred_labels"),
                     prediction.bbox, prediction.get_field("scores"), prediction.get_field("labels"),
                     prediction_pred.get_field("idx_pairs"), prediction_pred.get_field("scores"),
                     top_Ns, result_dict, mode)
 
+        evaluator[mode].print_stats(logger)
         logger.info("{}-recall@20: {}".format(mode, np.mean(np.array(result_dict[mode + '_recall'][20]))))
         logger.info("{}-recall@50: {}".format(mode, np.mean(np.array(result_dict[mode + '_recall'][50]))))
         logger.info("{}-recall@100: {}".format(mode, np.mean(np.array(result_dict[mode + '_recall'][100]))))
@@ -95,21 +131,21 @@ def evaluate(gt_classes, gt_boxes, gt_rels,
     # assert(relations.shape[0] == num_boxes * (num_boxes - 1))
     assert(predicates.shape[0] == relations.shape[0])
     num_relations = relations.shape[0]
-    if mode =='pred_cls':
+    if mode =='predcls':
         # if predicate classification task
         # use ground truth bounding boxes
         assert(num_boxes == num_gt_boxes)
         classes = gt_classes
         class_scores = gt_class_scores
         boxes = gt_boxes
-    elif mode =='sg_cls':
+    elif mode =='sgcls':
         assert(num_boxes == num_gt_boxes)
         # if scene graph classification task
         # use gt boxes, but predicted classes
         classes = obj_labels.numpy() # np.argmax(class_preds, 1)
         class_scores = obj_scores.numpy()
         boxes = gt_boxes
-    elif mode =='sg_det' or mode == 'sg_det+':
+    elif mode =='sgdet' or mode == 'sgdet+':
         # if scene graph detection task
         # use preicted boxes and predicted classes
         classes = obj_labels.numpy() # np.argmax(class_preds, 1)

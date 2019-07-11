@@ -26,7 +26,7 @@ class SceneParser(GeneralizedRCNN):
         self.sg_heads = None
         if self.cfg.MODEL.ALGORITHM in SCENE_PAESER_DICT:
             self.sg_heads = SCENE_PAESER_DICT[self.cfg.MODEL.ALGORITHM](cfg, self.backbone.out_channels)
-        
+
     def forward(self, images, targets=None):
         """
         Arguments:
@@ -45,7 +45,7 @@ class SceneParser(GeneralizedRCNN):
         images = to_image_list(images)
         features = self.backbone(images.tensors)
         proposals, proposal_losses = self.rpn(images, features, targets)
-
+        
         if self.sg_heads:
             x, result, scene_parser_losses = self.sg_heads(features, proposals, targets)
         if self.roi_heads:

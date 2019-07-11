@@ -24,9 +24,12 @@ class ROIRelationHead(torch.nn.Module):
         self.loss_evaluator = make_roi_relation_loss_evaluator(cfg)
 
         if self.cfg.MODEL.USE_FREQ_PRIOR:
-            freq_prior = torch.from_numpy(np.load("freq_prior.npy"))
-            freq_prior[:, :, 0] += 1
-            self.freq_dist = freq_prior / (freq_prior.sum(2).unsqueeze(2) + 1e-5)
+            # freq_prior = torch.from_numpy(np.load("freq_prior.npy"))
+            # freq_prior[:, :, 0] += 1
+            # self.freq_dist = freq_prior / (freq_prior.sum(2).unsqueeze(2) + 1e-5)
+            # self.freq_dist[:, :, 0] = 0
+
+            self.freq_dist = torch.from_numpy(np.load("pred_stats.npy"))
             self.freq_dist[:, :, 0] = 0
 
     def _get_proposal_pairs(self, proposals):

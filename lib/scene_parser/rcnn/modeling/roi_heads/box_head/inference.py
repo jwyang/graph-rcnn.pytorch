@@ -23,7 +23,8 @@ class PostProcessor(nn.Module):
         detections_per_img=100,
         box_coder=None,
         cls_agnostic_bbox_reg=False,
-        bbox_aug_enabled=False
+        bbox_aug_enabled=False,
+        relation_on=False
     ):
         """
         Arguments:
@@ -35,12 +36,13 @@ class PostProcessor(nn.Module):
         super(PostProcessor, self).__init__()
         self.score_thresh = score_thresh
         self.nms = nms
-        self.detections_per_img = detections_per_img
+        self.detections_per_img = 64 # detections_per_img
         if box_coder is None:
             box_coder = BoxCoder(weights=(10., 10., 5., 5.))
         self.box_coder = box_coder
         self.cls_agnostic_bbox_reg = cls_agnostic_bbox_reg
         self.bbox_aug_enabled = bbox_aug_enabled
+        self.relation_on = relation_on
 
     def forward(self, x, boxes):
         """
@@ -82,7 +84,11 @@ class PostProcessor(nn.Module):
             boxlist = self.prepare_boxlist(boxes_per_img, prob, image_shape)
             boxlist = boxlist.clip_to_image(remove_empty=False)
             if not self.bbox_aug_enabled:  # If bbox aug is enabled, we will do it later
-                boxlist = self.filter_results(boxlist, num_classes)
+                if not self.relation_on:
+                    boxlist = self.filter_results(boxlist, num_classes)
+                else:
+                    # boxlist_pre = self.filter_results(boxlist, num_classes)
+                    boxlist = self.filter_results_nm(boxlist, num_classes)
             results.append(boxlist)
         return results
 
@@ -148,6 +154,67 @@ class PostProcessor(nn.Module):
             result = result[keep]
         return result
 
+    def filter_results_nm(self, boxlist, num_classes, thresh=0.05):
+        """Returns bounding-box detection results by thresholding on scores and
+        applying non-maximum suppression (NMS). Similar to Neural-Motif Network
+        """
+        # unwrap the boxlist to avoid additional overhead.
+        # if we had multi-class NMS, we could perform this directly on the boxlist
+        boxes = boxlist.bbox.reshape(-1, num_classes * 4)
+        scores = boxlist.get_field("scores").reshape(-1, num_classes)
+
+        valid_cls = (scores[:, 1:].max(0)[0] > thresh).nonzero() + 1
+
+        nms_mask = scores.clone()
+        nms_mask.zero_()
+
+        device = scores.device
+        result = []
+        # Apply threshold on detection probabilities and apply NMS
+        # Skip j = 0, because it's the background class
+        inds_all = scores > self.score_thresh
+        for j in valid_cls.view(-1).cpu():
+            scores_j = scores[:, j]
+            boxes_j = boxes[:, j * 4 : (j + 1) * 4]
+            boxlist_for_class = BoxList(boxes_j, boxlist.size, mode="xyxy")
+            boxlist_for_class.add_field("scores", scores_j)
+            boxlist_for_class.add_field("idxs", torch.arange(0, scores.shape[0]).long())
+            # boxlist_for_class = boxlist_nms(
+            #     boxlist_for_class, self.nms
+            # )
+            boxlist_for_class = boxlist_nms(
+                boxlist_for_class, 0.3
+            )
+            nms_mask[:, j][boxlist_for_class.get_field("idxs")] = 1
+
+            num_labels = len(boxlist_for_class)
+            boxlist_for_class.add_field(
+                "labels", torch.full((num_labels,), j, dtype=torch.int64, device=device)
+            )
+            result.append(boxlist_for_class)
+
+        dists_all = nms_mask * scores
+
+        # filter duplicate boxes
+        scores_pre, labels_pre = dists_all.max(1)
+        inds_all = scores_pre.nonzero()
+        assert inds_all.dim() != 0
+        inds_all = inds_all.squeeze(1)
+
+        labels_all = labels_pre[inds_all]
+        scores_all = scores_pre[inds_all]
+        box_inds_all = inds_all * scores.shape[1] + labels_all
+        result = BoxList(boxlist.bbox.view(-1, 4)[box_inds_all], boxlist.size, mode="xyxy")
+        result.add_field("labels", labels_all)
+        result.add_field("scores", scores_all)
+        number_of_detections = len(result)
+
+        vs, idx = torch.sort(scores_all, dim=0, descending=True)
+        idx = idx[vs > thresh]
+        if self.detections_per_img < idx.size(0):
+            idx = idx[:self.detections_per_img]
+        result = result[idx]
+        return result
 
 def make_roi_box_post_processor(cfg):
     use_fpn = cfg.MODEL.ROI_HEADS.USE_FPN
@@ -167,6 +234,7 @@ def make_roi_box_post_processor(cfg):
         detections_per_img,
         box_coder,
         cls_agnostic_bbox_reg,
-        bbox_aug_enabled
+        bbox_aug_enabled,
+        relation_on=cfg.MODEL.RELATION_ON
     )
     return postprocessor

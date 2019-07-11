@@ -15,11 +15,13 @@ def evaluate(dataset, predictions, output_folder, **kwargs):
     Returns:
         evaluation result
     """
-    args = dict(
-        dataset=dataset, predictions=predictions, output_folder=output_folder, **kwargs
-    )
+
     if isinstance(dataset, vg_hdf5):
-        return voc_evaluation(**args)
+        args = dict(
+            dataset=dataset, predictions=predictions, output_folder=output_folder, **kwargs
+        )
+        # return voc_evaluation(**args)
+        return coco_evaluation(**args)
     else:
         dataset_name = dataset.__class__.__name__
         raise NotImplementedError("Unsupported dataset type {}.".format(dataset_name))
