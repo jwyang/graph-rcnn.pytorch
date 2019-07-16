@@ -53,3 +53,45 @@ backbone | model | bs | lr | lr_decay_step | max_iter | sgdet@20 | sgdet@50 | sg
 Resnet-101 | vanilla | 6 | 5e-3 | (70k, 90k) | 100k | 10.4 | 14.3 | 16.8
 Resnet-101 | frequency | 6 | 5e-3 | (70k, 90k) | 100k | 19.4 | 25.0 | 28.5
 <!-- Resnet-101 | freq-overlap | 6 | 5e-3 | (70k, 90k) | 100k | - | - | - -->
+
+
+
+## Installation
+
+### Prerequisites
+
+* Python 3.6+
+* Pytorch 1.0
+* CUDA 8.0+
+
+### Dependencies
+
+Install all the python dependencies using pip:
+```
+pip install -r requirements.txt
+```
+
+### Data Preparation
+
+First make a folder in the root folder:
+```
+mkdir -p datasets/vg_bm
+```
+
+Here, the suffix 'bm' is in short of "benchmark" representing the dataset for benchmarking. We may have other format of vg dataset in the future, e.g., more categories.
+
+Then, download the data and preprocess the data according following this [repo](https://github.com/danfeiX/scene-graph-TF-release). Specifically, after downloading  the [visual genome dataset](), you can follow this [guidelines](https://github.com/danfeiX/scene-graph-TF-release/tree/master/data_tools) to get the following files:
+
+```
+datasets/vg_bm/imdb_1024.h5
+datasets/vg_bm/bbox_distribution.npy
+datasets/vg_bm/proposals.h5
+datasets/vg_bm/VG-SGG-dicts.json
+datasets/vg_bm/VG-SGG.h5
+```
+
+### Compilation
+
+## Train
+
+## Evaluate
