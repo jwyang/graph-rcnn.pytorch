@@ -193,4 +193,4 @@ Similarly you can also append the ''--inference $YOUR_NUMBER'' to perform partia
 
 ## Acknowledgement
 
-We appreciate the nicely organized code developed by [maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark). Our codebase is built mostly based on this repo.
+We appreciate much the nicely organized code developed by [maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark). Our codebase is built mostly based on it.
