@@ -98,10 +98,21 @@ datasets/vg_bm/VG-SGG.h5
 
 The above files will provide all the data needed for training the object detection models and scene graph generation models listed above.
 
-* Visual Genome bottom-up dataset:
+* Visual Genome bottom-up and top-down dataset:
 
+Annotations | Object | Attribute | Predicate
+------------|--------|-----------|-----------
+\#Categories| 1600   | 400       | 20
 
-Soon, I will add more data loader to train scene graph generation model on more object/predicate/attribute categories.
+Soon, I will add this data loader to train [bottom-up and top-down model](https://arxiv.org/pdf/1707.07998.pdf) on more object/predicate/attribute categories.
+
+* Visual Genome extreme dataset:
+
+Annotations | Object | Attribute | Predicate
+------------|--------|-----------|-----------
+\#Categories| 2500   | ~600      | ~400
+
+This data loader further increase the number of categories for training more fine-grained visual representations.
 
 ### Compilation
 
