@@ -73,14 +73,14 @@ pip install -r requirements.txt
 
 ### Data Preparation
 
-First make a folder in the root folder:
+First, make a folder in the root folder:
 ```
 mkdir -p datasets/vg_bm
 ```
 
 Here, the suffix 'bm' is in short of "benchmark" representing the dataset for benchmarking. We may have other format of vg dataset in the future, e.g., more categories.
 
-Then, download the data and preprocess the data according following this [repo](https://github.com/danfeiX/scene-graph-TF-release). Specifically, after downloading  the [visual genome dataset](), you can follow this [guidelines](https://github.com/danfeiX/scene-graph-TF-release/tree/master/data_tools) to get the following files:
+Then, download the data and preprocess the data according following this [repo](https://github.com/danfeiX/scene-graph-TF-release). Specifically, after downloading  the [visual genome dataset](https://visualgenome.org/), you can follow this [guidelines](https://github.com/danfeiX/scene-graph-TF-release/tree/master/data_tools) to get the following files:
 
 ```
 datasets/vg_bm/imdb_1024.h5
@@ -91,6 +91,14 @@ datasets/vg_bm/VG-SGG.h5
 ```
 
 ### Compilation
+
+Compile the cuda dependencies using the following commands:
+```
+cd lib/scene_parser/rcnn
+python setup.py build develop
+```
+
+After that, you should see all the necessary components, including nms, roi_pool, roi_align are compiled successfully.
 
 ## Train
 
