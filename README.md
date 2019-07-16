@@ -102,4 +102,55 @@ After that, you should see all the necessary components, including nms, roi_pool
 
 ## Train
 
+### Train object detection model:
+
+* Faster r-cnn model with resnet-101 as backbone:
+```
+python main.py --config-file configs/faster_rcnn_res101.yaml
+```
+
+Multi-GPU training:
+```
+python -m torch.distributed.launch --nproc_per_node=$NGPUS main.py --config-file configs/faster_rcnn_res101.yaml
+```
+where NGPUS is the number of gpus available.
+
+### Train scene graph generation model:
+
+* Vanilla scene graph generation model with resnet-101 as backbone:
+```
+python main.py --config-file configs/baseline_res101.yaml
+```
+
+Multi-GPU training:
+```
+python -m torch.distributed.launch --nproc_per_node=$NGPUS main.py --config-file configs/baseline_res101.yaml
+```
+where NGPUS is the number of gpus available.
+
 ## Evaluate
+
+### Evaluate object detection model:
+
+* Faster r-cnn model with resnet-101 as backbone:
+```
+python main.py --config-file configs/faster_rcnn_res101.yaml --inference --resume $CHECKPOINT
+```
+where CHECKPOINT is the iteration number. By default it will evaluate the whole validation/test set. However, you can specify the number of inference images by appending the following argument:
+```
+--inference $YOUR_NUMBER
+```
+
+### Evaluate scene graph generation model:
+
+* Vanilla scene graph generation model with resnet-101 as backbone:
+```
+python main.py --config-file configs/baseline_res101.yaml --inference --resume $CHECKPOINT
+```
+
+* Vanilla scene graph generation model with resnet-101 as backbone and use frequency prior:
+```
+python main.py --config-file configs/baseline_res101.yaml --inference --resume $CHECKPOINT --use_freq_prior
+```
+
+Similarly you can also append the ''--inference $YOUR_NUMBER'' to perform partially evaluate.

@@ -249,7 +249,7 @@ class SceneGraphGeneration:
                 results_pred_dict.update(
                     {img_id: result for img_id, result in zip(image_ids, output_pred)}
                 )
-            if i > 1000:
+            if self.cfg.instance > 0 and i > self.cfg.instance:
                 break
         synchronize()
         total_time = total_timer.toc()
