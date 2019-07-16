@@ -45,13 +45,13 @@ The goal of gathering all these representative methods into a single repo is to 
 
 source  | backbone | model | bs | lr  | lr_decay | max_iter | mAP@0.5 | mAP@0.50:0.95
 --------|--------|--------|--------|--------|---------|--------|--------|--------
-this repo | Resnet-101 | faster r-cnn | 6 | 5e-3 | (70k, 90k) | 100k | 24.8 | 12.8
+this repo | Res-101 | faster r-cnn | 6 | 5e-3 | (70k, 90k) | 100k | 24.8 | 12.8
 
 ### Scene Graph Generation
 source | backbone | model | bs | lr | lr_decay | max_iter | sgdet@20 | sgdet@50 | sgdet@100
 -------|--------|--------|--------|---------|--------|--------|--------|---------|---------
-this repo | Resnet-101 | vanilla | 6 | 5e-3 | (70k, 90k) | 100k | 10.4 | 14.3 | 16.8
-this repo | Resnet-101 | freq | 6 | 5e-3 | (70k, 90k) | 100k | 19.4 | 25.0 | 28.5
+this repo | Res-101 | vanilla | 6 | 5e-3 | (70k, 90k) | 100k | 10.4 | 14.3 | 16.8
+this repo | Res-101 | freq | 6 | 5e-3 | (70k, 90k) | 100k | 19.4 | 25.0 | 28.5
 [neural motif](https://github.com/rowanz/neural-motifs) | VGG-16 | freq | N/A | N/A | N/A | N/A | 17.7 | 23.5 | 27.6
 <!-- Resnet-101 | freq-overlap | 6 | 5e-3 | (70k, 90k) | 100k | - | - | - -->
 \* freq = frequency prior baseline
