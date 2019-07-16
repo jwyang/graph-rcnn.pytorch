@@ -183,14 +183,14 @@ Similarly you can also append the ''--inference $YOUR_NUMBER'' to perform partia
 
 ## Citation
 
-  @inproceedings{yang2018graph,
-    title={Graph r-cnn for scene graph generation},
-    author={Yang, Jianwei and Lu, Jiasen and Lee, Stefan and Batra, Dhruv and Parikh, Devi},
-    booktitle={Proceedings of the European Conference on Computer Vision (ECCV)},
-    pages={670--685},
-    year={2018}
-  }
+    @inproceedings{yang2018graph,
+        title={Graph r-cnn for scene graph generation},
+        author={Yang, Jianwei and Lu, Jiasen and Lee, Stefan and Batra, Dhruv and Parikh, Devi},
+        booktitle={Proceedings of the European Conference on Computer Vision (ECCV)},
+        pages={670--685},
+        year={2018}
+    }
 
 ## Acknowledgement
 
-We appreciate the nicely organized code developed by [maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark). Our codebase are mostly built based on this repo.
+We appreciate the nicely organized code developed by [maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark). Our codebase is built mostly based on this repo.
