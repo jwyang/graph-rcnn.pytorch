@@ -73,6 +73,12 @@ pip install -r requirements.txt
 
 ### Data Preparation
 
+* Visual Genome benchmarking dataset:
+
+Annotations | Object | Predicate
+------------|--------| ---------
+\#Categories| 150    | 50
+
 First, make a folder in the root folder:
 ```
 mkdir -p datasets/vg_bm
@@ -89,6 +95,13 @@ datasets/vg_bm/proposals.h5
 datasets/vg_bm/VG-SGG-dicts.json
 datasets/vg_bm/VG-SGG.h5
 ```
+
+The above files will provide all the data needed for training the object detection models and scene graph generation models listed above.
+
+* Visual Genome bottom-up dataset:
+
+
+Soon, I will add more data loader to train scene graph generation model on more object/predicate/attribute categories.
 
 ### Compilation
 
