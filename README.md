@@ -45,13 +45,13 @@ The goal of gathering all these representative methods into a single repo is to 
 
 source  | backbone | model | bs | lr  | lr_decay | max_iter | mAP@0.5 | mAP@0.50:0.95
 --------|--------|--------|:------:|:------:|:-------:|:------:|:------:|:------:
-this repo | Res-101 | faster r-cnn | 6 | 5e-3 | 70k,90k | 100k | 24.8 | 12.8
+[this repo](https://drive.google.com/open?id=1THLvK8q2VRx6K3G7BGo0FCe-D0EWP9o1) | Res-101 | faster r-cnn | 6 | 5e-3 | 70k,90k | 100k | 24.8 | 12.8
 
 ### Scene Graph Generation
 source | backbone | model | bs | lr | lr_decay | max_iter | sgdet@20 | sgdet@50 | sgdet@100
 -------|--------|--------|:------:|:-------:|:------:|:------:|:------:|:-------:|:-------:
-this repo | Res-101 | vanilla | 6 | 5e-3 | 70k,90k | 100k | 10.4 | 14.3 | 16.8
-this repo | Res-101 | freq | 6 | 5e-3 | 70k,90k | 100k | 19.4 | 25.0 | 28.5
+[this repo](https://drive.google.com/open?id=1Vb-gX3_OLhzgdNseXgS_2DiLmJ8qiG8P) | Res-101 | vanilla | 6 | 5e-3 | 70k,90k | 100k | 10.4 | 14.3 | 16.8
+[this repo](https://drive.google.com/open?id=1Vb-gX3_OLhzgdNseXgS_2DiLmJ8qiG8P) | Res-101 | freq | 6 | 5e-3 | 70k,90k | 100k | 19.4 | 25.0 | 28.5
 [motifnet](https://github.com/rowanz/neural-motifs) | VGG-16 | freq | N/A | N/A | N/A | N/A | 17.7 | 23.5 | 27.6
 <!-- Resnet-101 | freq-overlap | 6 | 5e-3 | (70k, 90k) | 100k | - | - | - -->
 \* freq = frequency prior baseline
@@ -180,6 +180,12 @@ python main.py --config-file configs/baseline_res101.yaml --inference --resume $
 
 Similarly you can also append the ''--inference $YOUR_NUMBER'' to perform partially evaluate.
 
+### Visualization
+
+If you want to visualize some examples, you just simple append the command with:
+```
+--visualize
+```
 
 ## Citation
 
