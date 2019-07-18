@@ -141,11 +141,11 @@ class DFConv2d(nn.Module):
             padding = dilation * (kernel_size - 1) // 2
             offset_base_channels = kernel_size * kernel_size
         if with_modulated_dcn:
-            from maskrcnn_benchmark.layers import ModulatedDeformConv
+            from .layers import ModulatedDeformConv
             offset_channels = offset_base_channels * 3 #default: 27
             conv_block = ModulatedDeformConv
         else:
-            from maskrcnn_benchmark.layers import DeformConv
+            from .layers import DeformConv
             offset_channels = offset_base_channels * 2 #default: 18
             conv_block = DeformConv
         self.offset = Conv2d(

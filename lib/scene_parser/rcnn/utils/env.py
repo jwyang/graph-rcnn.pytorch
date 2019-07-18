@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 import os
 
-from maskrcnn_benchmark.utils.imports import import_file
+from .imports import import_file
 
 
 def setup_environment():
