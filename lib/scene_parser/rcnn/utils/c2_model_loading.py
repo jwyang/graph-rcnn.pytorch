@@ -5,8 +5,8 @@ from collections import OrderedDict
 
 import torch
 
-from maskrcnn_benchmark.utils.model_serialization import load_state_dict
-from maskrcnn_benchmark.utils.registry import Registry
+from .model_serialization import load_state_dict
+from .registry import Registry
 
 
 def _rename_basic_resnet_weights(layer_keys):
