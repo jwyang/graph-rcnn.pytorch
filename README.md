@@ -55,7 +55,7 @@ source | backbone | model | bs | lr | lr_decay | max_iter | sgdet@20 | sgdet@50 
 [motifnet](https://github.com/rowanz/neural-motifs) | VGG-16 | freq | N/A | N/A | N/A | N/A | 17.7 | 23.5 | 27.6
 <!-- Resnet-101 | freq-overlap | 6 | 5e-3 | (70k, 90k) | 100k | - | - | - -->
 \* freq = frequency prior baseline
-
+\* you can click 'this repo' in above table to download the checkpoints.
 
 ## Installation
 
