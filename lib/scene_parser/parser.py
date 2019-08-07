@@ -13,9 +13,9 @@ from .rcnn.utils.checkpoint import SceneParserCheckpointer
 from .rcnn.structures.image_list import to_image_list
 from .rcnn.utils.comm import synchronize, get_rank
 from .imp.imp import IMP
-from .msdn.msdn import MSDN
+# from .msdn.msdn import MSDN
 
-SCENE_PAESER_DICT = {"imp": IMP, "msdn": MSDN}
+SCENE_PAESER_DICT = {"imp": IMP} #, "msdn": MSDN}
 
 class SceneParser(GeneralizedRCNN):
     "Scene Parser"
