@@ -6,7 +6,7 @@ from .vg_hdf5 import vg_hdf5
 from . import samplers
 from .transforms import build_transforms
 from .collate_batch import BatchCollator
-from lib.scene_parser.rcnn.utils.comm import get_world_size
+from lib.scene_parser.rcnn.utils.comm import get_world_size, get_rank
 
 def make_data_sampler(dataset, shuffle, distributed):
     if distributed:
@@ -60,7 +60,8 @@ def build_data_loader(cfg, split="train", num_im=-1, is_distributed=False, start
         dataset = vg_hdf5(cfg, split=split, transforms=transforms, num_im=num_im)
         sampler = make_data_sampler(dataset, True if split == "train" else False, is_distributed)
         images_per_batch = cfg.DATASET.TRAIN_BATCH_SIZE if split == "train" else cfg.DATASET.TEST_BATCH_SIZE
-        print("images_per_batch: {}, num_gpus: {}".format(images_per_batch, num_gpus))
+        if get_rank() == 0:
+            print("images_per_batch: {}, num_gpus: {}".format(images_per_batch, num_gpus))
         images_per_gpu = images_per_batch // num_gpus if split == "train" else 1
         start_iter = start_iter if split == "train" else 0
         num_iters = cfg.SOLVER.MAX_ITER if split == "train" else None
@@ -76,5 +77,5 @@ def build_data_loader(cfg, split="train", num_im=-1, is_distributed=False, start
             )
         return dataloader
     else:
-        raise NotImplementedError("Unsupported dataset {}.".format(dataset))
+        raise NotImplementedError("Unsupported dataset {}.".format(cfg.DATASET.NAME))
 #         cfg.data_dir = "data/vg"
