@@ -3,3 +3,6 @@ yacs
 cython
 matplotlib
 tqdm
+h5py
+easydict
+dill
