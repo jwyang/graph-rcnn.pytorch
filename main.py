@@ -107,7 +107,7 @@ def main():
     cfg.MODEL.USE_FREQ_PRIOR = args.use_freq_prior
     cfg.freeze()
 
-    if not os.path.exists("logs"):
+    if not os.path.exists("logs") and get_rank() == 0:
         os.mkdir("logs")
     logger = setup_logger("scene_graph_generation", "logs", get_rank())
     logger.info(args)
