@@ -150,26 +150,27 @@ where NGPUS is the number of gpus available.
 
 * Vanilla scene graph generation model with resnet-101 as backbone:
 ```
-python main.py --config-file configs/baseline_res101_joint.yaml
+python main.py --config-file configs/sgg_res101_joint.yaml --algorithm $ALGORITHM
 ```
 
 Multi-GPU training:
 ```
-python -m torch.distributed.launch --nproc_per_node=$NGPUS main.py --config-file configs/baseline_res101_joint.yaml
+python -m torch.distributed.launch --nproc_per_node=$NGPUS main.py --config-file configs/sgg_res101_joint.yaml --algorithm $ALGORITHM
 ```
-where NGPUS is the number of gpus available.
+where NGPUS is the number of gpus available. ALGORIHM is the scene graph generation model name.
 
 ### Train scene graph generation model stepwise (train detector first, and then sgg):
 
 * Vanilla scene graph generation model with resnet-101 as backbone:
 ```
-python main.py --config-file configs/baseline_res101_step.yaml
+python main.py --config-file configs/sgg_res101_step.yaml --algorithm $ALGORITHM
 ```
 
 Multi-GPU training:
 ```
-python -m torch.distributed.launch --nproc_per_node=$NGPUS main.py --config-file configs/baseline_res101_step.yaml
+python -m torch.distributed.launch --nproc_per_node=$NGPUS main.py --config-file configs/sgg_res101_step.yaml --algorithm $ALGORITHM
 ```
+where NGPUS is the number of gpus available. ALGORIHM is the scene graph generation model name.
 
 ## Evaluate
 
@@ -188,12 +189,12 @@ where CHECKPOINT is the iteration number. By default it will evaluate the whole 
 
 * Vanilla scene graph generation model with resnet-101 as backbone:
 ```
-python main.py --config-file configs/baseline_res101_{joint/step}.yaml --inference --resume $CHECKPOINT
+python main.py --config-file configs/baseline_res101_{joint/step}.yaml --inference --resume $CHECKPOINT --algorithm $ALGORITHM
 ```
 
 * Vanilla scene graph generation model with resnet-101 as backbone and use frequency prior:
 ```
-python main.py --config-file configs/baseline_res101_{joint/step}.yaml --inference --resume $CHECKPOINT --use_freq_prior
+python main.py --config-file configs/baseline_res101_{joint/step}.yaml --inference --resume $CHECKPOINT --algorithm $ALGORITHM --use_freq_prior
 ```
 
 Similarly you can also append the ''--inference $YOUR_NUMBER'' to perform partially evaluate.
