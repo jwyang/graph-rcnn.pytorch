@@ -146,18 +146,30 @@ python -m torch.distributed.launch --nproc_per_node=$NGPUS main.py --config-file
 ```
 where NGPUS is the number of gpus available.
 
-### Train scene graph generation model:
+### Train scene graph generation model jointly (train detector and sgg as a whole):
 
 * Vanilla scene graph generation model with resnet-101 as backbone:
 ```
-python main.py --config-file configs/baseline_res101.yaml
+python main.py --config-file configs/baseline_res101_joint.yaml
 ```
 
 Multi-GPU training:
 ```
-python -m torch.distributed.launch --nproc_per_node=$NGPUS main.py --config-file configs/baseline_res101.yaml
+python -m torch.distributed.launch --nproc_per_node=$NGPUS main.py --config-file configs/baseline_res101_joint.yaml
 ```
 where NGPUS is the number of gpus available.
+
+### Train scene graph generation model stepwise (train detector first, and then sgg):
+
+* Vanilla scene graph generation model with resnet-101 as backbone:
+```
+python main.py --config-file configs/baseline_res101_step.yaml
+```
+
+Multi-GPU training:
+```
+python -m torch.distributed.launch --nproc_per_node=$NGPUS main.py --config-file configs/baseline_res101_step.yaml
+```
 
 ## Evaluate
 
@@ -176,12 +188,12 @@ where CHECKPOINT is the iteration number. By default it will evaluate the whole 
 
 * Vanilla scene graph generation model with resnet-101 as backbone:
 ```
-python main.py --config-file configs/baseline_res101.yaml --inference --resume $CHECKPOINT
+python main.py --config-file configs/baseline_res101_{joint/step}.yaml --inference --resume $CHECKPOINT
 ```
 
 * Vanilla scene graph generation model with resnet-101 as backbone and use frequency prior:
 ```
-python main.py --config-file configs/baseline_res101.yaml --inference --resume $CHECKPOINT --use_freq_prior
+python main.py --config-file configs/baseline_res101_{joint/step}.yaml --inference --resume $CHECKPOINT --use_freq_prior
 ```
 
 Similarly you can also append the ''--inference $YOUR_NUMBER'' to perform partially evaluate.
