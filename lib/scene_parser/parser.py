@@ -117,10 +117,11 @@ class SceneParser(GeneralizedRCNN):
         return result
 
 def get_save_dir(cfg):
+    train_mode = "joint" if cfg.MODEL.WEIGHT_DET == "" else "step"
+    train_alg = (cfg.MODEL.ALGORITHM + '_' + train_mode) if "sg" in cfg.MODEL.ALGORITHM else cfg.MODEL.ALGORITHM
     outdir = os.path.join(
         cfg.DATASET.NAME + '_' + cfg.DATASET.MODE + '_' + cfg.DATASET.LOADER,
-        cfg.MODEL.BACKBONE.CONV_BODY,
-        cfg.MODEL.ALGORITHM,
+        cfg.MODEL.BACKBONE.CONV_BODY, train_alg,
         'BatchSize_{}'.format(cfg.DATASET.TRAIN_BATCH_SIZE),
         'Base_LR_{}'.format(cfg.SOLVER.BASE_LR)
         )
@@ -145,6 +146,6 @@ def build_scene_parser_optimizer(cfg, model, local_rank=0, distributed=False):
     save_to_disk = get_rank() == 0
     checkpointer = SceneParserCheckpointer(cfg, model, optimizer, scheduler, save_dir, save_to_disk,
         logger=logging.getLogger("scene_graph_generation.checkpointer"))
-    model_weight =cfg.MODEL.WEIGHT_DET if cfg.MODEL.WEIGHT_DET != "" else cfg.MODEL.WEIGHT_IMG
+    model_weight = cfg.MODEL.WEIGHT_DET if cfg.MODEL.WEIGHT_DET != "" else cfg.MODEL.WEIGHT_IMG
     extra_checkpoint_data = checkpointer.load(model_weight, resume=cfg.resume)
     return optimizer, scheduler, checkpointer, extra_checkpoint_data
