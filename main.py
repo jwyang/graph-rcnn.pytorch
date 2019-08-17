@@ -81,7 +81,6 @@ def test(cfg, args, model=None):
 
 def main():
     ''' parse config file '''
-    # args = parse_args()
     parser = argparse.ArgumentParser(description="Graph Reasoning Machine for Visual Question Answering")
     parser.add_argument("--config-file", default="configs/baseline_res101.yaml")
     parser.add_argument("--local_rank", type=int, default=0)
@@ -90,6 +89,7 @@ def main():
     parser.add_argument("--instance", type=int, default=-1)
     parser.add_argument("--use_freq_prior", action='store_true')
     parser.add_argument("--visualize", action='store_true')
+    parser.add_argument("--algorithm", type=str, default='sg_baseline')
     args = parser.parse_args()
 
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
@@ -105,6 +105,7 @@ def main():
     cfg.resume = args.resume
     cfg.instance = args.instance
     cfg.MODEL.USE_FREQ_PRIOR = args.use_freq_prior
+    cfg.MODEL.ALGORIHM = args.algorithm
     cfg.freeze()
 
     if not os.path.exists("logs") and get_rank() == 0:
