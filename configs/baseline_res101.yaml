@@ -1,7 +1,7 @@
 DATASET:
   NAME: "vg"
   MODE: "benchmark"
-  TRAIN_BATCH_SIZE: 16
+  TRAIN_BATCH_SIZE: 2
   TEST_BATCH_SIZE: 1
 MODEL:
   WEIGHT_IMG: "catalog://ImageNetPretrained/MSRA/R-101"

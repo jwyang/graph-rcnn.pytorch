@@ -27,6 +27,7 @@ class FastRCNNLossComputation(object):
         box_coder,
         cls_agnostic_bbox_reg=False,
         use_matched_pairs_only=True,
+        minimal_matched_pairs=0,
     ):
         """
         Arguments:
@@ -40,6 +41,7 @@ class FastRCNNLossComputation(object):
         self.box_coder = box_coder
         self.cls_agnostic_bbox_reg = cls_agnostic_bbox_reg
         self.use_matched_pairs_only = use_matched_pairs_only
+        self.minimal_matched_pairs = min_matched_pairs
 
     def match_targets_to_proposals(self, proposal, target):
         match_quality_matrix = boxlist_iou(target, proposal)
@@ -82,7 +84,7 @@ class FastRCNNLossComputation(object):
         # NB: need to clamp the indices because we can have a single
         # GT in the image, and matched_idxs can be -2, which goes
         # out of bounds
-        if self.use_matched_pairs_only:
+        if self.use_matched_pairs_only and (matched_idxs >= 0).sum() > self.minimal_matched_pairs:
             # filter all matched_idxs < 0
             proposal_pairs = proposal_pairs[matched_idxs >= 0]
             matched_idxs = matched_idxs[matched_idxs >= 0]

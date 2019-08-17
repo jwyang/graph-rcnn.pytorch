@@ -21,6 +21,7 @@ class PostProcessor(nn.Module):
         score_thresh=0.05,
         nms=0.5,
         detections_per_img=100,
+        min_detections_per_img=0,
         box_coder=None,
         cls_agnostic_bbox_reg=False,
         bbox_aug_enabled=False,
@@ -36,7 +37,8 @@ class PostProcessor(nn.Module):
         super(PostProcessor, self).__init__()
         self.score_thresh = score_thresh
         self.nms = nms
-        self.detections_per_img = 64 # detections_per_img
+        self.detections_per_img = detections_per_img
+        self.min_detections_per_img = min_detections_per_img
         if box_coder is None:
             box_coder = BoxCoder(weights=(10., 10., 5., 5.))
         self.box_coder = box_coder
@@ -89,6 +91,19 @@ class PostProcessor(nn.Module):
                 else:
                     # boxlist_pre = self.filter_results(boxlist, num_classes)
                     boxlist = self.filter_results_nm(boxlist, num_classes)
+
+                    # to enforce minimum number of detections per image
+                    # we will do a binary search on the confidence threshold
+                    score_thresh = 0.05
+                    while len(boxlist) < self.min_detections_per_img:
+                        score_thresh /= 2.0
+                        print(("\nNumber of proposals {} is too small, "
+                               "retrying filter_results with score thresh"
+                               " = {}").format(len(boxlist), score_thresh))
+                        boxlist = self.filter_results_nm(boxlist, num_classes, thresh=score_thresh)
+            if len(boxlist) == 0:
+                import pdb; pdb.set_trace()
+                
             results.append(boxlist)
         return results
 
@@ -225,6 +240,7 @@ def make_roi_box_post_processor(cfg):
     score_thresh = cfg.MODEL.ROI_HEADS.SCORE_THRESH
     nms_thresh = cfg.MODEL.ROI_HEADS.NMS
     detections_per_img = cfg.MODEL.ROI_HEADS.DETECTIONS_PER_IMG
+    min_detections_per_img = cfg.MODEL.ROI_HEADS.MIN_DETECTIONS_PER_IMG
     cls_agnostic_bbox_reg = cfg.MODEL.CLS_AGNOSTIC_BBOX_REG
     bbox_aug_enabled = cfg.TEST.BBOX_AUG.ENABLED
 
@@ -232,6 +248,7 @@ def make_roi_box_post_processor(cfg):
         score_thresh,
         nms_thresh,
         detections_per_img,
+        min_detections_per_img,
         box_coder,
         cls_agnostic_bbox_reg,
         bbox_aug_enabled,
