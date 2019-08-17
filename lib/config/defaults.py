@@ -46,7 +46,10 @@ _C.MODEL.RELATION_ON = False
 _C.MODEL.DEVICE = "cuda"
 _C.MODEL.META_ARCHITECTURE = "GeneralizedRCNN"
 _C.MODEL.CLS_AGNOSTIC_BBOX_REG = False
-_C.MODEL.WEIGHT = ""
+_C.MODEL.WEIGHT_IMG = ""    # weight loading path for imagenet pretrained model
+_C.MODEL.WEIGHT_DET = ""    # weight loading path for detector pre-trained model
+_C.MODEL.WEIGHT_SGG = ""    # weight loading path for scene graph generator pre-trained model
+
 # If the WEIGHT starts with a catalog://, like :R-50, the code will look for
 # the path in paths_catalog. Else, it will use it as the specified absolute
 # path
@@ -54,6 +57,7 @@ _C.MODEL.BACKBONE = CN()  # Backbone options
 _C.MODEL.BACKBONE.CONV_BODY = "R-50-C4" # The backbone conv body to use # (e.g., 'FPN.add_fpn_ResNet101_conv5_body' to specify a ResNet-101-FPN backbone)
 _C.MODEL.BACKBONE.FREEZE_CONV_BODY_AT = 2 # Add StopGrad at a specified stage so the bottom layers are frozen
 _C.MODEL.BACKBONE.OUT_CHANNELS = 256 * 4
+_C.MODEL.BACKBONE.FREEZE_PARAMETER = False
 
 _C.MODEL.FPN = CN() # FPN options
 _C.MODEL.FPN.USE_GN = False
@@ -110,6 +114,8 @@ _C.MODEL.RPN.FPN_POST_NMS_PER_BATCH = True
 # Custom rpn head, empty to use default conv or separable conv
 _C.MODEL.RPN.RPN_HEAD = "SingleConvRPNHead"
 
+_C.MODEL.RPN.FREEZE_PARAMETER = False
+
 # ---------------------------------------------------------------------------- #
 # ROI HEADS options
 # ---------------------------------------------------------------------------- #
@@ -160,6 +166,7 @@ _C.MODEL.ROI_BOX_HEAD.USE_GN = False
 _C.MODEL.ROI_BOX_HEAD.DILATION = 1
 _C.MODEL.ROI_BOX_HEAD.CONV_HEAD_DIM = 256
 _C.MODEL.ROI_BOX_HEAD.NUM_STACKED_CONVS = 4
+_C.MODEL.ROI_BOX_HEAD.FREEZE_PARAMETER = False
 
 ''''''
 _C.MODEL.ROI_RELATION_HEAD = CN()

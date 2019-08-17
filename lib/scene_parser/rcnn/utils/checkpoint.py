@@ -50,7 +50,7 @@ class Checkpointer(object):
         self.tag_last_checkpoint(save_file)
 
     def load(self, f=None, resume=0, use_latest=True):
-        if self.has_last_checkpoint() and use_latest and resume == 0:
+        if self.has_last_checkpoint() and use_latest and resume > 0:
             # override argument with existing checkpoint
             f = self.get_last_checkpoint_file()
         elif self.has_checkpoint(resume) and resume > 0:
@@ -62,14 +62,14 @@ class Checkpointer(object):
         self.logger.info("Loading checkpoint from {}".format(f))
         checkpoint = self._load_file(f)
         self._load_model(checkpoint)
-        if "optimizer" in checkpoint and self.optimizer:
+        if "optimizer" in checkpoint and self.optimizer and "sg" in f:
             self.logger.info("Loading optimizer from {}".format(f))
             self.optimizer.load_state_dict(checkpoint.pop("optimizer"))
-        if "scheduler" in checkpoint and self.scheduler:
+        if "scheduler" in checkpoint and self.scheduler and "sg" in f:
             self.logger.info("Loading scheduler from {}".format(f))
             self.scheduler.load_state_dict(checkpoint.pop("scheduler"))
+        checkpoint['iteration'] = resume  # if we load detector, the we should not use its start iteration
 
-        # return any further checkpoint data
         return checkpoint
 
     def has_last_checkpoint(self):

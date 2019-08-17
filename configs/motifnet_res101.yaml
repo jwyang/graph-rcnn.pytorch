@@ -6,7 +6,7 @@ DATASET:
 MODEL:
   WEIGHT_IMG: "catalog://ImageNetPretrained/MSRA/R-101"
   WEIGHT_DET: ""
-  ALGORITHM: "sg_imp"
+  ALGORITHM: "sg_motifnet"
   BACKBONE:
     CONV_BODY: "R-101-C4"
     FREEZE_PARAMETER: False

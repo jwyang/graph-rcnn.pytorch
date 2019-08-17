@@ -14,7 +14,7 @@ from .rcnn.structures.image_list import to_image_list
 from .rcnn.utils.comm import synchronize, get_rank
 from .rcnn.modeling.relation_heads.relation_heads import build_roi_relation_head
 
-SCENE_PAESER_DICT = {"sg_baseline", "sg_imp"} #, "msdn": MSDN}
+SCENE_PAESER_DICT = {"sg_baseline", "sg_imp", "sg_msdn"} #, "msdn": MSDN}
 
 class SceneParser(GeneralizedRCNN):
     "Scene Parser"
@@ -25,6 +25,41 @@ class SceneParser(GeneralizedRCNN):
         self.rel_heads = None
         if cfg.MODEL.RELATION_ON and self.cfg.MODEL.ALGORITHM in SCENE_PAESER_DICT:
             self.rel_heads = build_roi_relation_head(cfg, self.backbone.out_channels)
+        self._freeze_components(self.cfg)
+
+    def _freeze_components(self, cfg):
+        if cfg.MODEL.BACKBONE.FREEZE_PARAMETER:
+            for param in self.backbone.parameters():
+                param.requires_grad = False
+
+        if cfg.MODEL.RPN.FREEZE_PARAMETER:
+            for param in self.rpn.parameters():
+                param.requires_grad = False
+
+        if cfg.MODEL.ROI_BOX_HEAD.FREEZE_PARAMETER:
+            for param in self.roi_heads.box.parameters():
+                param.requires_grad = False
+
+    def train(self):
+        if self.cfg.MODEL.BACKBONE.FREEZE_PARAMETER:
+            self.backbone.eval()
+        else:
+            self.backbone.train()
+
+        if self.cfg.MODEL.RPN.FREEZE_PARAMETER:
+            self.rpn.eval()
+        else:
+            self.rpn.train()
+
+        if self.cfg.MODEL.ROI_BOX_HEAD.FREEZE_PARAMETER:
+            self.roi_heads.eval()
+        else:
+            self.roi_heads.train()
+
+        self.rel_heads.train()
+
+    def eval(self):
+        self.eval()
 
     def forward(self, images, targets=None):
         """
@@ -44,10 +79,11 @@ class SceneParser(GeneralizedRCNN):
         images = to_image_list(images)
         features = self.backbone(images.tensors)
         proposals, proposal_losses = self.rpn(images, features, targets)
-
+        scene_parser_losses = {}
         if self.roi_heads:
-            x, detections, scene_parser_losses = self.roi_heads(features, proposals, targets)
+            x, detections, roi_heads_loss = self.roi_heads(features, proposals, targets)
             result = detections
+            scene_parser_losses.update(roi_heads_loss)
 
             if self.rel_heads:
                 relation_features = features
@@ -60,8 +96,8 @@ class SceneParser(GeneralizedRCNN):
                     relation_features = x
                 # During training, self.box() will return the unaltered proposals as "detections"
                 # this makes the API consistent during training and testing
-                x_pairs, detection_pairs, loss_relation = self.rel_heads(relation_features, detections, targets)
-                losses.update(loss_relation)
+                x_pairs, detection_pairs, rel_heads_loss = self.rel_heads(relation_features, detections, targets)
+                scene_parser_losses.update(rel_heads_loss)
 
                 x = (x, x_pairs)
                 result = (detections, detection_pairs)
@@ -109,5 +145,6 @@ def build_scene_parser_optimizer(cfg, model, local_rank=0, distributed=False):
     save_to_disk = get_rank() == 0
     checkpointer = SceneParserCheckpointer(cfg, model, optimizer, scheduler, save_dir, save_to_disk,
         logger=logging.getLogger("scene_graph_generation.checkpointer"))
-    extra_checkpoint_data = checkpointer.load(cfg.MODEL.WEIGHT, resume=cfg.resume)
+    model_weight =cfg.MODEL.WEIGHT_DET if cfg.MODEL.WEIGHT_DET != "" else cfg.MODEL.WEIGHT_IMG
+    extra_checkpoint_data = checkpointer.load(model_weight, resume=cfg.resume)
     return optimizer, scheduler, checkpointer, extra_checkpoint_data

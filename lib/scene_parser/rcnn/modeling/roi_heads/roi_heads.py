@@ -19,11 +19,9 @@ class CombinedROIHeads(torch.nn.ModuleDict):
             self.keypoint.feature_extractor = self.box.feature_extractor
 
     def forward(self, features, proposals, targets=None):
-        losses = {}
         # TODO rename x to roi_box_features, if it doesn't increase memory consumption
         x, detections, loss_box = self.box(features, proposals, targets)
-        losses.update(loss_box)
-        return x, detections, losses
+        return x, detections, loss_box
 
 
 def build_roi_heads(cfg, in_channels):
