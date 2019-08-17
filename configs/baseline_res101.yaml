@@ -6,7 +6,7 @@ DATASET:
 MODEL:
   WEIGHT: "catalog://ImageNetPretrained/MSRA/R-101"
   ALGORITHM: "sg_baseline"
-  USE_FREQ_PRIOR: False  
+  USE_FREQ_PRIOR: False
   BACKBONE:
     CONV_BODY: "R-101-C4"
   ROI_HEADS:

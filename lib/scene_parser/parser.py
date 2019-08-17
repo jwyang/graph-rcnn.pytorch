@@ -12,10 +12,9 @@ from .rcnn.solver import make_optimizer
 from .rcnn.utils.checkpoint import SceneParserCheckpointer
 from .rcnn.structures.image_list import to_image_list
 from .rcnn.utils.comm import synchronize, get_rank
-from .imp.imp import IMP
-# from .msdn.msdn import MSDN
+from .rcnn.modeling.relation_heads.relation_heads import build_roi_relation_head
 
-SCENE_PAESER_DICT = {"imp": IMP} #, "msdn": MSDN}
+SCENE_PAESER_DICT = {"sg_baseline", "sg_imp"} #, "msdn": MSDN}
 
 class SceneParser(GeneralizedRCNN):
     "Scene Parser"
@@ -23,9 +22,9 @@ class SceneParser(GeneralizedRCNN):
         GeneralizedRCNN.__init__(self, cfg)
         self.cfg = cfg
 
-        self.sg_heads = None
-        if self.cfg.MODEL.ALGORITHM in SCENE_PAESER_DICT:
-            self.sg_heads = SCENE_PAESER_DICT[self.cfg.MODEL.ALGORITHM](cfg, self.backbone.out_channels)
+        self.rel_heads = None
+        if cfg.MODEL.RELATION_ON and self.cfg.MODEL.ALGORITHM in SCENE_PAESER_DICT:
+            self.rel_heads = build_roi_relation_head(cfg, self.backbone.out_channels)
 
     def forward(self, images, targets=None):
         """
@@ -45,11 +44,28 @@ class SceneParser(GeneralizedRCNN):
         images = to_image_list(images)
         features = self.backbone(images.tensors)
         proposals, proposal_losses = self.rpn(images, features, targets)
-        
-        if self.sg_heads:
-            x, result, scene_parser_losses = self.sg_heads(features, proposals, targets)
+
         if self.roi_heads:
-            x, result, scene_parser_losses = self.roi_heads(features, proposals, targets)
+            x, detections, scene_parser_losses = self.roi_heads(features, proposals, targets)
+            result = detections
+
+            if self.rel_heads:
+                relation_features = features
+                # optimization: during training, if we share the feature extractor between
+                # the box and the relation heads, then we can reuse the features already computed
+                if (
+                    self.training
+                    and self.cfg.MODEL.ROI_RELATION_HEAD.SHARE_BOX_FEATURE_EXTRACTOR
+                ):
+                    relation_features = x
+                # During training, self.box() will return the unaltered proposals as "detections"
+                # this makes the API consistent during training and testing
+                x_pairs, detection_pairs, loss_relation = self.rel_heads(relation_features, detections, targets)
+                losses.update(loss_relation)
+
+                x = (x, x_pairs)
+                result = (detections, detection_pairs)
+
         else:
             # RPN-only models don't have roi_heads
             x = features

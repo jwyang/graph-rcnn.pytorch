@@ -5,7 +5,7 @@ DATASET:
   TEST_BATCH_SIZE: 1
 MODEL:
   WEIGHT: "catalog://ImageNetPretrained/MSRA/R-101"
-  ALGORITHM: "imp"
+  ALGORITHM: "sg_imp"
   BACKBONE:
     CONV_BODY: "R-101-C4"
   ROI_HEADS:

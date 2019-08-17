@@ -13,7 +13,7 @@ from lib.scene_parser.rcnn.structures.bounding_box_pair import BoxPairList
 
 class ROIRelationHead(torch.nn.Module):
     """
-    Generic Box Head class.
+    Generic Relation Head class.
     """
 
     def __init__(self, cfg, in_channels):
