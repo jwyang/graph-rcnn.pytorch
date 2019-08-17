@@ -41,7 +41,7 @@ class FastRCNNLossComputation(object):
         self.box_coder = box_coder
         self.cls_agnostic_bbox_reg = cls_agnostic_bbox_reg
         self.use_matched_pairs_only = use_matched_pairs_only
-        self.minimal_matched_pairs = min_matched_pairs
+        self.minimal_matched_pairs = minimal_matched_pairs
 
     def match_targets_to_proposals(self, proposal, target):
         match_quality_matrix = boxlist_iou(target, proposal)
