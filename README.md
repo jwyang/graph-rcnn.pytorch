@@ -61,6 +61,11 @@ source | backbone | model | bs | lr | lr_decay | max_iter | sgdet@20 | sgdet@50 
 [this repo](https://drive.google.com/open?id=1Vb-gX3_OLhzgdNseXgS_2DiLmJ8qiG8P) | Res-101 | vanilla | 6 | 5e-3 | 70k,90k | 100k | 10.4 | 14.3 | 16.8
 <!---[this repo](https://drive.google.com/open?id=1Vb-gX3_OLhzgdNseXgS_2DiLmJ8qiG8P) | Res-101 | freq | 6 | 5e-3 | 70k,90k | 100k | 19.4 | 25.0 | 28.5-->
 
+### Scene Graph Generation (Step training)
+source | backbone | model | bs | lr | lr_decay | max_iter | sgdet@20 | sgdet@50 | sgdet@100
+-------|--------|--------|:------:|:-------:|:------:|:------:|:------:|:-------:|:-------:
+this repo | Res-101 | vanilla | 8 | 5e-3 | 20k,30k | 40k | 10.5 | 13.8 | 16.1
+
 \* you can click 'this repo' in above table to download the checkpoints.
 
 ## Installation
