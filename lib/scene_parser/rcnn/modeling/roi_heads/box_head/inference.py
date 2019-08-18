@@ -64,6 +64,7 @@ class PostProcessor(nn.Module):
         # TODO think about a representation of batch of boxes
         image_shapes = [box.size for box in boxes]
         boxes_per_image = [len(box) for box in boxes]
+        features = [box.get_field("features") for box in boxes]
         concat_boxes = torch.cat([a.bbox for a in boxes], dim=0)
 
         if self.cls_agnostic_bbox_reg:
@@ -80,10 +81,10 @@ class PostProcessor(nn.Module):
         class_prob = class_prob.split(boxes_per_image, dim=0)
 
         results = []
-        for prob, boxes_per_img, image_shape in zip(
-            class_prob, proposals, image_shapes
+        for prob, boxes_per_img, features_per_img, image_shape in zip(
+            class_prob, proposals, features, image_shapes
         ):
-            boxlist = self.prepare_boxlist(boxes_per_img, prob, image_shape)
+            boxlist = self.prepare_boxlist(boxes_per_img, features_per_img, prob, image_shape)
             boxlist = boxlist.clip_to_image(remove_empty=False)
             if not self.bbox_aug_enabled:  # If bbox aug is enabled, we will do it later
                 if not self.relation_on:
@@ -103,11 +104,11 @@ class PostProcessor(nn.Module):
                         boxlist = self.filter_results_nm(boxlist, num_classes, thresh=score_thresh)
             if len(boxlist) == 0:
                 import pdb; pdb.set_trace()
-                
+
             results.append(boxlist)
         return results
 
-    def prepare_boxlist(self, boxes, scores, image_shape):
+    def prepare_boxlist(self, boxes, features, scores, image_shape):
         """
         Returns BoxList from `boxes` and adds probability scores information
         as an extra field
@@ -124,6 +125,7 @@ class PostProcessor(nn.Module):
         scores = scores.reshape(-1)
         boxlist = BoxList(boxes, image_shape, mode="xyxy")
         boxlist.add_field("scores", scores)
+        boxlist.add_field("features", features)
         return boxlist
 
     def filter_results(self, boxlist, num_classes):
@@ -134,6 +136,7 @@ class PostProcessor(nn.Module):
         # if we had multi-class NMS, we could perform this directly on the boxlist
         boxes = boxlist.bbox.reshape(-1, num_classes * 4)
         scores = boxlist.get_field("scores").reshape(-1, num_classes)
+        features = boxlist.get_field("features")
 
         device = scores.device
         result = []
@@ -143,9 +146,11 @@ class PostProcessor(nn.Module):
         for j in range(1, num_classes):
             inds = inds_all[:, j].nonzero().squeeze(1)
             scores_j = scores[inds, j]
+            features_j = features[inds]
             boxes_j = boxes[inds, j * 4 : (j + 1) * 4]
             boxlist_for_class = BoxList(boxes_j, boxlist.size, mode="xyxy")
             boxlist_for_class.add_field("scores", scores_j)
+            boxlist_for_class.add_field("features", features_j)
             boxlist_for_class = boxlist_nms(
                 boxlist_for_class, self.nms
             )
@@ -177,6 +182,7 @@ class PostProcessor(nn.Module):
         # if we had multi-class NMS, we could perform this directly on the boxlist
         boxes = boxlist.bbox.reshape(-1, num_classes * 4)
         scores = boxlist.get_field("scores").reshape(-1, num_classes)
+        features = boxlist.get_field("features")
 
         valid_cls = (scores[:, 1:].max(0)[0] > thresh).nonzero() + 1
 
@@ -218,10 +224,13 @@ class PostProcessor(nn.Module):
 
         labels_all = labels_pre[inds_all]
         scores_all = scores_pre[inds_all]
+        features_all = features[inds_all]
+
         box_inds_all = inds_all * scores.shape[1] + labels_all
         result = BoxList(boxlist.bbox.view(-1, 4)[box_inds_all], boxlist.size, mode="xyxy")
         result.add_field("labels", labels_all)
         result.add_field("scores", scores_all)
+        result.add_field("features", features_all)
         number_of_detections = len(result)
 
         vs, idx = torch.sort(scores_all, dim=0, descending=True)

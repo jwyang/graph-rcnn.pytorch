@@ -5,11 +5,14 @@ import numpy as np
 import torch
 from torch import nn
 
-from .roi_relation_feature_extractors import make_roi_relation_feature_extractor
-from .roi_relation_predictors import make_roi_relation_predictor
+# from .roi_relation_feature_extractors import make_roi_relation_feature_extractor
+# from .roi_relation_predictors import make_roi_relation_predictor
 from .inference import make_roi_relation_post_processor
 from .loss import make_roi_relation_loss_evaluator
 from lib.scene_parser.rcnn.structures.bounding_box_pair import BoxPairList
+
+from .baseline.baseline import build_baseline_model
+from .imp.imp import build_imp_model
 
 class ROIRelationHead(torch.nn.Module):
     """
@@ -19,9 +22,12 @@ class ROIRelationHead(torch.nn.Module):
     def __init__(self, cfg, in_channels):
         super(ROIRelationHead, self).__init__()
         self.cfg = cfg
-        self.feature_extractor = make_roi_relation_feature_extractor(cfg, in_channels)
-        self.predictor = make_roi_relation_predictor(
-            cfg, self.feature_extractor.out_channels)
+
+        if cfg.MODEL.ALGORITHM == "sg_baseline":
+            self.rel_predictor = build_baseline_model(cfg, in_channels)
+        elif cfg.MODEL.ALGORITHM == "sg_imp":
+            self.rel_predictor = build_imp_model(cfg, in_channels)
+
         self.post_processor = make_roi_relation_post_processor(cfg)
         self.loss_evaluator = make_roi_relation_loss_evaluator(cfg)
 
@@ -86,26 +92,22 @@ class ROIRelationHead(torch.nn.Module):
         else:
             # extract features that will be fed to the final classifier. The
             # feature_extractor generally corresponds to the pooler + heads
-            if self.training:
-                x = self.feature_extractor(features, proposal_pairs)
-                class_logits = self.predictor(x)
-            else:
-                with torch.no_grad():
-                    x = self.feature_extractor(features, proposal_pairs)
-                    class_logits = self.predictor(x)
-            # final classifier that converts the features into predictions
-
-        # import pdb; pdb.set_trace()
+            x, obj_class_logits, pred_class_logits = self.rel_predictor(features, proposals, proposal_pairs)
 
         if not self.training:
-            result = self.post_processor((class_logits), proposal_pairs, use_freq_prior=self.cfg.MODEL.USE_FREQ_PRIOR)
+            result = self.post_processor((pred_class_logits), proposal_pairs, use_freq_prior=self.cfg.MODEL.USE_FREQ_PRIOR)
             return x, result, {}
 
-        loss_pred_classifier = self.loss_evaluator([class_logits])
+        # if self.cfg.MODEL.ALGORITHM != "sg_baseline":
+        #     loss_obj_classifier = self.loss_evaluator.obj_classification_loss(proposals, [obj_class_logits])
+        # else:
+        loss_obj_classifier = 0
+
+        loss_pred_classifier = self.loss_evaluator([pred_class_logits])
         return (
             x,
             proposal_pairs,
-            dict(loss_pred_classifier=loss_pred_classifier),
+            dict(loss_obj_classifier=loss_obj_classifier, loss_pred_classifier=loss_pred_classifier),
         )
 
 

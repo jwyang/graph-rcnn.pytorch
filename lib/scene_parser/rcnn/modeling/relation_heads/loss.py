@@ -188,6 +188,17 @@ class FastRCNNLossComputation(object):
 
         return classification_loss
 
+    def obj_classification_loss(self, proposals, class_logits):
+        class_logits = cat(class_logits, dim=0)
+
+        device = class_logits.device
+
+        labels = cat([proposal.get_field("labels") for proposal in proposals], dim=0)
+
+        classification_loss = F.cross_entropy(class_logits, labels)
+        
+        return classification_loss
+
 
 def make_roi_relation_loss_evaluator(cfg):
     matcher = PairMatcher(

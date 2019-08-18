@@ -15,6 +15,7 @@ class ROIBoxHead(torch.nn.Module):
 
     def __init__(self, cfg, in_channels):
         super(ROIBoxHead, self).__init__()
+        self.avgpool = nn.AdaptiveAvgPool2d(1)
         self.feature_extractor = make_roi_box_feature_extractor(cfg, in_channels)
         self.predictor = make_roi_box_predictor(
             cfg, self.feature_extractor.out_channels)
@@ -34,7 +35,7 @@ class ROIBoxHead(torch.nn.Module):
                 are returned. During testing, the predicted boxlists are returned
             losses (dict[Tensor]): During training, returns the losses for the
                 head. During testing, returns an empty dict.
-        """        
+        """
         if self.training:
             # Faster R-CNN subsamples during training the proposals with a fixed
             # positive / negative ratio
@@ -47,8 +48,14 @@ class ROIBoxHead(torch.nn.Module):
         # final classifier that converts the features into predictions
         class_logits, box_regression = self.predictor(x)
 
+        boxes_per_image = [len(proposal) for proposal in proposals]
+        features = x.split(boxes_per_image, dim=0)
+        for proposal, feature in zip(proposals, features):
+            proposal.add_field("features", self.avgpool(feature))
+
         if not self.training:
             result = self.post_processor((class_logits, box_regression), proposals)
+            result = self.loss_evaluator.prepare_labels(result, targets)
             return x, result, {}
 
         loss_classifier, loss_box_reg = self.loss_evaluator(

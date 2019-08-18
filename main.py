@@ -106,7 +106,7 @@ def main():
     cfg.instance = args.instance
     cfg.inference = args.inference
     cfg.MODEL.USE_FREQ_PRIOR = args.use_freq_prior
-    cfg.MODEL.ALGORIHM = args.algorithm
+    cfg.MODEL.ALGORITHM = args.algorithm
     cfg.freeze()
 
     if not os.path.exists("logs") and get_rank() == 0:

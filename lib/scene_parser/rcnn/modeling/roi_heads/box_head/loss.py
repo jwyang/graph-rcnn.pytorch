@@ -115,6 +115,31 @@ class FastRCNNLossComputation(object):
         self._proposals = proposals
         return proposals
 
+    def prepare_labels(self, proposals, targets):
+        """
+        This method prepares the ground-truth labels for each bounding box, and return
+        the sampled proposals.
+        Note: this function keeps a state.
+
+        Arguments:
+            proposals (list[BoxList])
+            targets (list[BoxList])
+        """
+
+        labels, regression_targets = self.prepare_targets(proposals, targets)
+
+        proposals = list(proposals)
+        # add corresponding label and regression_targets information to the bounding boxes
+        for labels_per_image, regression_targets_per_image, proposals_per_image in zip(
+            labels, regression_targets, proposals
+        ):
+            proposals_per_image.add_field("labels", labels_per_image)
+            proposals_per_image.add_field(
+                "regression_targets", regression_targets_per_image
+            )
+
+        return proposals
+
     def __call__(self, class_logits, box_regression):
         """
         Computes the loss for Faster R-CNN.
