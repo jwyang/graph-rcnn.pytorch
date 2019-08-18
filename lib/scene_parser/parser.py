@@ -56,14 +56,18 @@ class SceneParser(GeneralizedRCNN):
         else:
             self.roi_heads.train()
 
-        self.rel_heads.train()
+        if self.rel_heads:
+            self.rel_heads.train()
+
         self.training = True
 
     def eval(self):
+        import pdb; pdb.set_trace()
         self.backbone.eval()
         self.rpn.eval()
         self.roi_heads.eval()
-        self.rel_heads.eval()
+        if self.rel_heads:
+            self.rel_heads.eval()
         self.training = False
 
     def forward(self, images, targets=None):
