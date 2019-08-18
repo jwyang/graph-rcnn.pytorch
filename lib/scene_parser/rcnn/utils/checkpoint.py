@@ -19,6 +19,7 @@ class Checkpointer(object):
         save_dir="",
         save_to_disk=None,
         logger=None,
+        inference=False
     ):
         self.model = model
         self.optimizer = optimizer
@@ -28,6 +29,7 @@ class Checkpointer(object):
         if logger is None:
             logger = logging.getLogger(__name__)
         self.logger = logger
+        self.inference = inference
 
     def save(self, name, **kwargs):
         if not self.save_dir:
@@ -62,10 +64,10 @@ class Checkpointer(object):
         self.logger.info("Loading checkpoint from {}".format(f))
         checkpoint = self._load_file(f)
         self._load_model(checkpoint)
-        if "optimizer" in checkpoint and self.optimizer and "sg" in f:
+        if "optimizer" in checkpoint and self.optimizer and "sg" in f and not self.inference:
             self.logger.info("Loading optimizer from {}".format(f))
             self.optimizer.load_state_dict(checkpoint.pop("optimizer"))
-        if "scheduler" in checkpoint and self.scheduler and "sg" in f:
+        if "scheduler" in checkpoint and self.scheduler and "sg" in f and not self.inference:
             self.logger.info("Loading scheduler from {}".format(f))
             self.scheduler.load_state_dict(checkpoint.pop("scheduler"))
         checkpoint['iteration'] = resume  # if we load detector, the we should not use its start iteration
@@ -160,7 +162,7 @@ class SceneParserCheckpointer(Checkpointer):
         logger=None,
     ):
         super(SceneParserCheckpointer, self).__init__(
-            model, optimizer, scheduler, save_dir, save_to_disk, logger
+            model, optimizer, scheduler, save_dir, save_to_disk, logger, cfg.inference
         )
         self.cfg = cfg.clone()
 

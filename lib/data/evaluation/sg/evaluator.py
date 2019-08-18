@@ -182,21 +182,26 @@ def evaluate_recall(gt_rels, gt_boxes, gt_classes,
     # assert np.all(pred_rels[:,0] != pred_rels[:,1])
     assert np.all(pred_rels[:,2] > 0)
 
+    # import pdb; pdb.set_trace()
+
     pred_triplets, pred_triplet_boxes, relation_scores = \
         _triplet(pred_rels[:,2], pred_rels[:,:2], pred_classes, pred_boxes,
                  rel_scores, cls_scores)
 
     scores_overall = relation_scores.prod(1)
-    if not np.all(scores_overall[1:] <= scores_overall[:-1] + 1e-5):
-        print("Somehow the relations weren't sorted properly: \n{}".format(scores_overall))
+
+    sorted_inds = np.argsort(scores_overall)[::-1]
+
+    # if not np.all(scores_overall[1:] <= scores_overall[:-1] + 1e-5):
+    #     print("Somehow the relations weren't sorted properly: \n{}".format(scores_overall))
         # raise ValueError("Somehow the relations werent sorted properly")
 
     # Compute recall. It's most efficient to match once and then do recall after
     pred_to_gt = _compute_pred_matches(
         gt_triplets,
-        pred_triplets,
+        pred_triplets[sorted_inds],
         gt_triplet_boxes,
-        pred_triplet_boxes,
+        pred_triplet_boxes[sorted_inds],
         iou_thresh,
         phrdet=phrdet,
     )

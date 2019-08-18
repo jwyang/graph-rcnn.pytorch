@@ -104,6 +104,7 @@ def main():
     cfg.merge_from_file(args.config_file)
     cfg.resume = args.resume
     cfg.instance = args.instance
+    cfg.inference = args.inference
     cfg.MODEL.USE_FREQ_PRIOR = args.use_freq_prior
     cfg.MODEL.ALGORIHM = args.algorithm
     cfg.freeze()
