@@ -14,7 +14,7 @@ from .rcnn.structures.image_list import to_image_list
 from .rcnn.utils.comm import synchronize, get_rank
 from .rcnn.modeling.relation_heads.relation_heads import build_roi_relation_head
 
-SCENE_PAESER_DICT = {"sg_baseline", "sg_imp", "sg_msdn"} #, "msdn": MSDN}
+SCENE_PAESER_DICT = ["sg_baseline", "sg_imp", "sg_msdn"] #, "msdn": MSDN}
 
 class SceneParser(GeneralizedRCNN):
     "Scene Parser"
@@ -65,7 +65,7 @@ class SceneParser(GeneralizedRCNN):
         self.roi_heads.eval()
         self.rel_heads.eval()
         self.training = False
-        
+
     def forward(self, images, targets=None):
         """
         Arguments:

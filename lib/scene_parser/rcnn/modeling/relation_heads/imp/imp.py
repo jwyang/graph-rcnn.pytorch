@@ -5,11 +5,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
 from torch.nn import Parameter
-from .imp_base import IMP_BASE
 from ..roi_relation_feature_extractors import make_roi_relation_feature_extractor
-from lib.scene_parser.rcnn.modeling.roi_heads.box_head.roi_box_predictors import make_roi_box_predictor
+from ..roi_relation_box_predictors import make_roi_relation_box_predictor
 from ..roi_relation_predictors import make_roi_relation_predictor
 
 class IMP(nn.Module):
@@ -21,6 +19,7 @@ class IMP(nn.Module):
         self.update_step = cfg.MODEL.ROI_RELATION_HEAD.IMP_FEATURE_UPDATE_STEP
         self.avgpool = nn.AdaptiveAvgPool2d(1)
         self.feature_extractor = make_roi_relation_feature_extractor(cfg, in_channels)
+
         self.obj_embedding = nn.Sequential(
             nn.Linear(self.feature_extractor.out_channels, self.dim),
             nn.ReLU(True),
@@ -41,22 +40,22 @@ class IMP(nn.Module):
         self.subj_edge_gate = nn.Sequential(nn.Linear(self.dim * 2, 1), nn.Sigmoid())
         self.obj_edge_gate = nn.Sequential(nn.Linear(self.dim * 2, 1), nn.Sigmoid())
 
-        self.obj_predictor = make_roi_box_predictor(cfg, 512)
+        self.obj_predictor = make_roi_relation_box_predictor(cfg, 512)
         self.pred_predictor = make_roi_relation_predictor(cfg, 512)
 
     def _get_map_idxs(self, proposals, proposal_pairs):
         rel_inds = []
         offset = 0
         for proposal, proposal_pair in zip(proposals, proposal_pairs):
-            rel_ind_i = proposal_pair.get_field("idx_pairs")
+            rel_ind_i = proposal_pair.get_field("idx_pairs").detach()
             rel_ind_i += offset
             offset = len(proposal)
             rel_inds.append(rel_ind_i)
 
         rel_inds = torch.cat(rel_inds, 0)
 
-        subj_pred_map = rel_inds.new(sum([len(proposal) for proposal in proposals]), rel_inds.shape[0]).fill_(0).float()
-        obj_pred_map = rel_inds.new(sum([len(proposal) for proposal in proposals]), rel_inds.shape[0]).fill_(0).float()
+        subj_pred_map = rel_inds.new(sum([len(proposal) for proposal in proposals]), rel_inds.shape[0]).fill_(0).float().detach()
+        obj_pred_map = rel_inds.new(sum([len(proposal) for proposal in proposals]), rel_inds.shape[0]).fill_(0).float().detach()
 
         subj_pred_map.scatter_(0, (rel_inds[:, 0].contiguous().view(1, -1)), 1)
         obj_pred_map.scatter_(0, (rel_inds[:, 1].contiguous().view(1, -1)), 1)
@@ -65,13 +64,13 @@ class IMP(nn.Module):
 
     def forward(self, features, proposals, proposal_pairs):
         rel_inds, subj_pred_map, obj_pred_map = self._get_map_idxs(proposals, proposal_pairs)
-        x_obj = torch.cat([proposal.get_field("features") for proposal in proposals], 0)
+        x_obj = torch.cat([proposal.get_field("features").detach() for proposal in proposals], 0)
         x_pred = self.avgpool(self.feature_extractor(features, proposal_pairs))
         x_obj = x_obj.view(x_obj.size(0), -1); x_pred = x_pred.view(x_pred.size(0), -1)
         x_obj = self.obj_embedding(x_obj); x_pred = self.rel_embedding(x_pred)
 
-        hx_obj = x_obj.clone().fill_(0)
-        hx_pred = x_pred.clone().fill_(0)
+        hx_obj = x_obj.clone().fill_(0).detach()
+        hx_pred = x_pred.clone().fill_(0).detach()
 
         hx_obj = [self.node_gru(x_obj, hx_obj)]
         hx_edge = [self.edge_gru(x_pred, hx_pred)]
@@ -94,10 +93,11 @@ class IMP(nn.Module):
 
         '''compute results and losses'''
         # final classifier that converts the features into predictions
-        obj_class_logits, _ = self.obj_predictor(hx_obj[-1].unsqueeze(2).unsqueeze(3))
+        # for object prediction, we do not do bbox regression again
+        obj_class_logits = self.obj_predictor(hx_obj[-1].unsqueeze(2).unsqueeze(3))
         pred_class_logits = self.pred_predictor(hx_edge[-1].unsqueeze(2).unsqueeze(3))
 
-        return (x_obj, x_pred), obj_class_logits, pred_class_logits
+        return (hx_obj[-1], hx_edge[-1]), obj_class_logits, pred_class_logits
 
 def build_imp_model(cfg, in_channels):
     return IMP(cfg, in_channels)

@@ -98,10 +98,10 @@ class ROIRelationHead(torch.nn.Module):
             result = self.post_processor((pred_class_logits), proposal_pairs, use_freq_prior=self.cfg.MODEL.USE_FREQ_PRIOR)
             return x, result, {}
 
-        # if self.cfg.MODEL.ALGORITHM != "sg_baseline":
-        #     loss_obj_classifier = self.loss_evaluator.obj_classification_loss(proposals, [obj_class_logits])
-        # else:
-        loss_obj_classifier = 0
+        if self.cfg.MODEL.ALGORITHM != "sg_baseline":
+            loss_obj_classifier = self.loss_evaluator.obj_classification_loss(proposals, [obj_class_logits])
+        else:
+            loss_obj_classifier = 0
 
         loss_pred_classifier = self.loss_evaluator([pred_class_logits])
         return (
