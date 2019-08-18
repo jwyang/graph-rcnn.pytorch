@@ -192,7 +192,7 @@ where CHECKPOINT is the iteration number. By default it will evaluate the whole 
 --inference $YOUR_NUMBER
 ```
 
-**If you want to evaluate the model at your own path, just need to change the MODEL.WEIGHT_DET to your own path in faster_rcnn_res101.yaml.**
+:exclamation: If you want to evaluate the model at your own path, just need to change the MODEL.WEIGHT_DET to your own path in faster_rcnn_res101.yaml.
 
 ### Evaluate scene graph generation model:
 
@@ -208,7 +208,7 @@ python main.py --config-file configs/sgg_res101_{joint/step}.yaml --inference --
 
 Similarly you can also append the ''--inference $YOUR_NUMBER'' to perform partially evaluate.
 
-**If you want to evaluate the model at your own path, just need to change the MODEL.WEIGHT_SGG to your own path in sgg_res101_{joint/step}.yaml.**
+:exclamation: If you want to evaluate the model at your own path, just need to change the MODEL.WEIGHT_SGG to your own path in sgg_res101_{joint/step}.yaml.
 
 ### Visualization
 
