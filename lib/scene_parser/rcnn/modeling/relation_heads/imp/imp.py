@@ -69,11 +69,13 @@ class IMP(nn.Module):
         x_obj = x_obj.view(x_obj.size(0), -1); x_pred = x_pred.view(x_pred.size(0), -1)
         x_obj = self.obj_embedding(x_obj); x_pred = self.rel_embedding(x_pred)
 
-        hx_obj = x_obj.clone().fill_(0).detach()
-        hx_pred = x_pred.clone().fill_(0).detach()
+        # hx_obj = x_obj.clone().fill_(0).detach()
+        # hx_pred = x_pred.clone().fill_(0).detach()
+        # hx_obj = [self.node_gru(x_obj, hx_obj)]
+        # hx_edge = [self.edge_gru(x_pred, hx_pred)]
 
-        hx_obj = [self.node_gru(x_obj, hx_obj)]
-        hx_edge = [self.edge_gru(x_pred, hx_pred)]
+        hx_obj = [x_obj]
+        hx_edge = [x_pred]
 
         for t in range(self.update_step):
             sub_vert = hx_obj[t][rel_inds[:, 0]]  #
