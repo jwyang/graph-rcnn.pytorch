@@ -189,12 +189,12 @@ where CHECKPOINT is the iteration number. By default it will evaluate the whole 
 
 * Vanilla scene graph generation model with resnet-101 as backbone:
 ```
-python main.py --config-file configs/baseline_res101_{joint/step}.yaml --inference --resume $CHECKPOINT --algorithm $ALGORITHM
+python main.py --config-file configs/sgg_res101_{joint/step}.yaml --inference --resume $CHECKPOINT --algorithm $ALGORITHM
 ```
 
 * Vanilla scene graph generation model with resnet-101 as backbone and use frequency prior:
 ```
-python main.py --config-file configs/baseline_res101_{joint/step}.yaml --inference --resume $CHECKPOINT --algorithm $ALGORITHM --use_freq_prior
+python main.py --config-file configs/sgg_res101_{joint/step}.yaml --inference --resume $CHECKPOINT --algorithm $ALGORITHM --use_freq_prior
 ```
 
 Similarly you can also append the ''--inference $YOUR_NUMBER'' to perform partially evaluate.
