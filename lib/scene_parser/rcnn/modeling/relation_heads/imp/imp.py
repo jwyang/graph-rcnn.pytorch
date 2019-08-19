@@ -31,14 +31,15 @@ class IMP(nn.Module):
             nn.Linear(self.dim, self.dim),
         )
 
-        self.edge_gru = nn.GRUCell(input_size=self.dim, hidden_size=self.dim)
-        self.node_gru = nn.GRUCell(input_size=self.dim, hidden_size=self.dim)
+        if self.update_step > 0:
+            self.edge_gru = nn.GRUCell(input_size=self.dim, hidden_size=self.dim)
+            self.node_gru = nn.GRUCell(input_size=self.dim, hidden_size=self.dim)
 
-        self.subj_node_gate = nn.Sequential(nn.Linear(self.dim * 2, 1), nn.Sigmoid())
-        self.obj_node_gate = nn.Sequential(nn.Linear(self.dim * 2, 1), nn.Sigmoid())
+            self.subj_node_gate = nn.Sequential(nn.Linear(self.dim * 2, 1), nn.Sigmoid())
+            self.obj_node_gate = nn.Sequential(nn.Linear(self.dim * 2, 1), nn.Sigmoid())
 
-        self.subj_edge_gate = nn.Sequential(nn.Linear(self.dim * 2, 1), nn.Sigmoid())
-        self.obj_edge_gate = nn.Sequential(nn.Linear(self.dim * 2, 1), nn.Sigmoid())
+            self.subj_edge_gate = nn.Sequential(nn.Linear(self.dim * 2, 1), nn.Sigmoid())
+            self.obj_edge_gate = nn.Sequential(nn.Linear(self.dim * 2, 1), nn.Sigmoid())
 
         self.obj_predictor = make_roi_relation_box_predictor(cfg, 512)
         self.pred_predictor = make_roi_relation_predictor(cfg, 512)
@@ -49,7 +50,7 @@ class IMP(nn.Module):
         for proposal, proposal_pair in zip(proposals, proposal_pairs):
             rel_ind_i = proposal_pair.get_field("idx_pairs").detach()
             rel_ind_i += offset
-            offset = len(proposal)
+            offset += len(proposal)
             rel_inds.append(rel_ind_i)
 
         rel_inds = torch.cat(rel_inds, 0)
@@ -69,13 +70,10 @@ class IMP(nn.Module):
         x_obj = x_obj.view(x_obj.size(0), -1); x_pred = x_pred.view(x_pred.size(0), -1)
         x_obj = self.obj_embedding(x_obj); x_pred = self.rel_embedding(x_pred)
 
-        # hx_obj = x_obj.clone().fill_(0).detach()
-        # hx_pred = x_pred.clone().fill_(0).detach()
-        # hx_obj = [self.node_gru(x_obj, hx_obj)]
-        # hx_edge = [self.edge_gru(x_pred, hx_pred)]
-
-        hx_obj = [x_obj]
-        hx_edge = [x_pred]
+        hx_obj = x_obj.clone().fill_(0).detach()
+        hx_pred = x_pred.clone().fill_(0).detach()
+        hx_obj = [self.node_gru(x_obj, hx_obj)]
+        hx_edge = [self.edge_gru(x_pred, hx_pred)]
 
         for t in range(self.update_step):
             sub_vert = hx_obj[t][rel_inds[:, 0]]  #
@@ -84,7 +82,8 @@ class IMP(nn.Module):
             '''update object features'''
             message_pred_to_subj = self.subj_node_gate(torch.cat([sub_vert, hx_edge[t]], 1)) * hx_edge[t]  # nrel x d
             message_pred_to_obj = self.obj_node_gate(torch.cat([obj_vert, hx_edge[t]], 1)) * hx_edge[t]    # nrel x d
-            node_message = torch.mm(subj_pred_map, message_pred_to_subj) + torch.mm(obj_pred_map, message_pred_to_obj)
+            node_message = torch.mm(subj_pred_map, message_pred_to_subj) / (subj_pred_map.sum(1, keepdim=True) + 1e-5) \
+                          + torch.mm(obj_pred_map, message_pred_to_obj) / (obj_pred_map.sum(1, keepdim=True) + 1e-5)
             hx_obj.append(self.node_gru(node_message, hx_obj[t]))
 
             '''update predicat features'''

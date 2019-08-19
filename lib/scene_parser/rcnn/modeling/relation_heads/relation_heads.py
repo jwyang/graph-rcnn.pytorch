@@ -13,6 +13,7 @@ from lib.scene_parser.rcnn.structures.bounding_box_pair import BoxPairList
 
 from .baseline.baseline import build_baseline_model
 from .imp.imp import build_imp_model
+from .msdn.msdn import build_msdn_model
 
 class ROIRelationHead(torch.nn.Module):
     """
@@ -27,6 +28,8 @@ class ROIRelationHead(torch.nn.Module):
             self.rel_predictor = build_baseline_model(cfg, in_channels)
         elif cfg.MODEL.ALGORITHM == "sg_imp":
             self.rel_predictor = build_imp_model(cfg, in_channels)
+        elif cfg.MODEL.ALGORITHM == "sg_msdn":
+            self.rel_predictor = build_msdn_model(cfg, in_channels)
 
         self.post_processor = make_roi_relation_post_processor(cfg)
         self.loss_evaluator = make_roi_relation_loss_evaluator(cfg)
@@ -83,12 +86,13 @@ class ROIRelationHead(torch.nn.Module):
             if use frequency prior, we directly use the statistics
             """
             x = None
+            obj_class_logits = None
             class_logits = []
             for proposal_per_image in proposals:
                 obj_labels = proposal_per_image.get_field("labels")
                 class_logits_per_image = self.freq_dist[obj_labels, :][:, obj_labels].view(-1, self.freq_dist.size(-1))
                 class_logits.append(class_logits_per_image)
-            class_logits = torch.cat(class_logits, 0)
+            pred_class_logits = torch.cat(class_logits, 0)
         else:
             # extract features that will be fed to the final classifier. The
             # feature_extractor generally corresponds to the pooler + heads
@@ -96,6 +100,11 @@ class ROIRelationHead(torch.nn.Module):
 
         if not self.training:
             result = self.post_processor((pred_class_logits), proposal_pairs, use_freq_prior=self.cfg.MODEL.USE_FREQ_PRIOR)
+            # boxes_per_image = [len(proposal) for proposal in proposals]
+            # obj_labels = obj_class_logits[:, 1:].max(1)[1] + 1
+            # obj_labels = obj_labels.split(boxes_per_image, dim=0)
+            # for proposal, obj_label in zip(proposals, obj_labels):
+            #     proposal.add_field("labels", obj_label)
             return x, result, {}
 
         if self.cfg.MODEL.ALGORITHM != "sg_baseline":

@@ -51,7 +51,7 @@ class Checkpointer(object):
         torch.save(data, save_file)
         self.tag_last_checkpoint(save_file)
 
-    def load(self, f=None, resume=0, use_latest=True):
+    def load(self, f=None, resume=0, use_latest=False):
         if self.has_last_checkpoint() and use_latest and resume > 0:
             # override argument with existing checkpoint
             f = self.get_last_checkpoint_file()

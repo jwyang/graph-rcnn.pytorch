@@ -62,7 +62,6 @@ class SceneParser(GeneralizedRCNN):
         self.training = True
 
     def eval(self):
-        import pdb; pdb.set_trace()
         self.backbone.eval()
         self.rpn.eval()
         self.roi_heads.eval()
