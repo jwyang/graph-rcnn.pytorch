@@ -6,3 +6,4 @@ tqdm
 h5py
 easydict
 dill
+opencv-python
