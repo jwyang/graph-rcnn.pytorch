@@ -16,6 +16,7 @@ This project is a set of reimplemented representative scene graph generation mod
 * [Scene Graph Generation by Iterative Message Passing](https://arxiv.org/pdf/1701.02426.pdf), Xu et al. CVPR 2017
 * [Scene Graph Generation from Objects, Phrases and Region Captions](https://arxiv.org/pdf/1707.09700.pdf), Li et al. ICCV 2017
 * [Neural Motifs: Scene Graph Parsing with Global Context](https://arxiv.org/pdf/1711.06640.pdf), Zellers et al. CVPR 2018
+* [Graphical Contrastive Losses for Scene Graph Generation](https://arxiv.org/pdf/1903.02728.pdf), Zhang et al, CVPR 2019
 
 Our reimplementations are based on the following repositories:
 
@@ -24,6 +25,7 @@ Our reimplementations are based on the following repositories:
 * [scene-graph-TF-release](https://github.com/danfeiX/scene-graph-TF-release)
 * [MSDN](https://github.com/yikang-li/MSDN)
 * [neural-motifs](https://github.com/rowanz/neural-motifs)
+* [Graphical Contrastive Losses](https://github.com/NVIDIA/ContrastiveLosses4VRD/tree/pytorch1_0)
 
 ## Why we need this repository?
 
@@ -38,6 +40,7 @@ The goal of gathering all these representative methods into a single repo is to 
 - [x] Neural Motif (Frequency Prior Baseline) (:balloon: 2019-07-08)
 - [ ] Neural Motif
 - [ ] Graph R-CNN
+- [ ] RelDN (Contrastive Losses)
 
 ## Benchmarking
 
