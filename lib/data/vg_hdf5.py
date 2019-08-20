@@ -18,6 +18,7 @@ class vg_hdf5(Dataset):
         assert split == "train" or split == "test", "split must be one of [train, val, test]"
         assert num_im >= -1, "the number of samples must be >= 0"
 
+        # split = 'train' if split == 'test' else 'test'
         self.data_dir = cfg.DATASET.PATH
         self.transforms = transforms
 

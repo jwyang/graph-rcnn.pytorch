@@ -47,11 +47,15 @@ class ROIRelationHead(torch.nn.Module):
             box_subj = box_subj.unsqueeze(1).repeat(1, box_subj.shape[0], 1)
             box_obj = box_obj.unsqueeze(0).repeat(box_obj.shape[0], 1, 1)
             proposal_box_pairs = torch.cat((box_subj.view(-1, 4), box_obj.view(-1, 4)), 1)
-            proposal_pairs_per_image = BoxPairList(proposal_box_pairs, proposals_per_image.size, proposals_per_image.mode)
 
             idx_subj = torch.arange(box_subj.shape[0]).view(-1, 1, 1).repeat(1, box_obj.shape[0], 1).to(proposals_per_image.bbox.device)
             idx_obj = torch.arange(box_obj.shape[0]).view(1, -1, 1).repeat(box_subj.shape[0], 1, 1).to(proposals_per_image.bbox.device)
             proposal_idx_pairs = torch.cat((idx_subj.view(-1, 1), idx_obj.view(-1, 1)), 1)
+
+            non_duplicate_idx = (proposal_idx_pairs[:, 0] != proposal_idx_pairs[:, 1]).nonzero()
+            proposal_idx_pairs = proposal_idx_pairs[non_duplicate_idx.view(-1)]
+            proposal_box_pairs = proposal_box_pairs[non_duplicate_idx.view(-1)]
+            proposal_pairs_per_image = BoxPairList(proposal_box_pairs, proposals_per_image.size, proposals_per_image.mode)
             proposal_pairs_per_image.add_field("idx_pairs", proposal_idx_pairs)
 
             proposal_pairs.append(proposal_pairs_per_image)
@@ -91,6 +95,9 @@ class ROIRelationHead(torch.nn.Module):
             for proposal_per_image in proposals:
                 obj_labels = proposal_per_image.get_field("labels")
                 class_logits_per_image = self.freq_dist[obj_labels, :][:, obj_labels].view(-1, self.freq_dist.size(-1))
+                # rmeove duplicate index
+                non_duplicate_idx = (torch.eye(obj_labels.shape[0]).view(-1) == 0).nonzero().view(-1).to(class_logits_per_image.device)
+                class_logits_per_image = class_logits_per_image[non_duplicate_idx]
                 class_logits.append(class_logits_per_image)
             pred_class_logits = torch.cat(class_logits, 0)
         else:

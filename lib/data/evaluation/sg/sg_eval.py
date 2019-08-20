@@ -28,14 +28,14 @@ def do_sg_evaluation(dataset, predictions, predictions_pred, output_folder, logg
                 'gt_boxes': gt_boxlist.bbox.numpy(),
             }
 
+            # import pdb; pdb.set_trace()
             prediction = prediction.resize((image_width, image_height))
-
             obj_scores = prediction.get_field("scores").numpy()
             all_rels = prediction_pred.get_field("idx_pairs").numpy()
             fp_pred = prediction_pred.get_field("scores").numpy()
-            multiplier = np.ones((obj_scores.shape[0], obj_scores.shape[0]))
-            np.fill_diagonal(multiplier, 0)
-            fp_pred = fp_pred * multiplier.reshape(obj_scores.shape[0] * obj_scores.shape[0], 1)
+            # multiplier = np.ones((obj_scores.shape[0], obj_scores.shape[0]))
+            # np.fill_diagonal(multiplier, 0)
+            # fp_pred = fp_pred * multiplier.reshape(obj_scores.shape[0] * (obj_scores.shape[0] - 1), 1)
             scores = np.column_stack((
                 obj_scores[all_rels[:,0]],
                 obj_scores[all_rels[:,1]],
@@ -63,6 +63,7 @@ def do_sg_evaluation(dataset, predictions, predictions_pred, output_folder, logg
                     top_Ns, result_dict, mode)
 
         evaluator[mode].print_stats(logger)
+        logger.info('=====================' + mode + '(IMP)' + '=========================')        
         logger.info("{}-recall@20: {}".format(mode, np.mean(np.array(result_dict[mode + '_recall'][20]))))
         logger.info("{}-recall@50: {}".format(mode, np.mean(np.array(result_dict[mode + '_recall'][50]))))
         logger.info("{}-recall@100: {}".format(mode, np.mean(np.array(result_dict[mode + '_recall'][100]))))

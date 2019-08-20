@@ -126,7 +126,10 @@ class SceneParser(GeneralizedRCNN):
 
 def get_save_dir(cfg):
     train_mode = "joint" if cfg.MODEL.WEIGHT_DET == "" else "step"
-    train_alg = (cfg.MODEL.ALGORITHM + '_' + train_mode) if "sg" in cfg.MODEL.ALGORITHM else cfg.MODEL.ALGORITHM
+    iter_step = max([cfg.MODEL.ROI_RELATION_HEAD.IMP_FEATURE_UPDATE_STEP, \
+                     cfg.MODEL.ROI_RELATION_HEAD.MSDN_FEATURE_UPDATE_STEP, \
+                     cfg.MODEL.ROI_RELATION_HEAD.GRCNN_FEATURE_UPDATE_STEP])
+    train_alg = (cfg.MODEL.ALGORITHM + '_' + train_mode + '_' + str(iter_step)) if "sg" in cfg.MODEL.ALGORITHM else cfg.MODEL.ALGORITHM
     outdir = os.path.join(
         cfg.DATASET.NAME + '_' + cfg.DATASET.MODE + '_' + cfg.DATASET.LOADER,
         cfg.MODEL.BACKBONE.CONV_BODY, train_alg,

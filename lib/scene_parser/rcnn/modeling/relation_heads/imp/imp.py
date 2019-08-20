@@ -23,12 +23,10 @@ class IMP(nn.Module):
         self.obj_embedding = nn.Sequential(
             nn.Linear(self.feature_extractor.out_channels, self.dim),
             nn.ReLU(True),
-            nn.Linear(self.dim, self.dim),
         )
         self.rel_embedding = nn.Sequential(
             nn.Linear(self.feature_extractor.out_channels, self.dim),
             nn.ReLU(True),
-            nn.Linear(self.dim, self.dim),
         )
 
         if self.update_step > 0:
@@ -66,14 +64,18 @@ class IMP(nn.Module):
     def forward(self, features, proposals, proposal_pairs):
         rel_inds, subj_pred_map, obj_pred_map = self._get_map_idxs(proposals, proposal_pairs)
         x_obj = torch.cat([proposal.get_field("features").detach() for proposal in proposals], 0)
+        features = [feature.detach() for feature in features]
         x_pred = self.avgpool(self.feature_extractor(features, proposal_pairs))
         x_obj = x_obj.view(x_obj.size(0), -1); x_pred = x_pred.view(x_pred.size(0), -1)
         x_obj = self.obj_embedding(x_obj); x_pred = self.rel_embedding(x_pred)
 
-        hx_obj = x_obj.clone().fill_(0).detach()
-        hx_pred = x_pred.clone().fill_(0).detach()
-        hx_obj = [self.node_gru(x_obj, hx_obj)]
-        hx_edge = [self.edge_gru(x_pred, hx_pred)]
+        # hx_obj = x_obj.clone().fill_(0).detach()
+        # hx_pred = x_pred.clone().fill_(0).detach()
+        # hx_obj = [self.node_gru(x_obj, hx_obj)]
+        # hx_edge = [self.edge_gru(x_pred, hx_pred)]
+
+        hx_obj = [x_obj]
+        hx_edge = [x_pred]
 
         for t in range(self.update_step):
             sub_vert = hx_obj[t][rel_inds[:, 0]]  #
@@ -82,14 +84,14 @@ class IMP(nn.Module):
             '''update object features'''
             message_pred_to_subj = self.subj_node_gate(torch.cat([sub_vert, hx_edge[t]], 1)) * hx_edge[t]  # nrel x d
             message_pred_to_obj = self.obj_node_gate(torch.cat([obj_vert, hx_edge[t]], 1)) * hx_edge[t]    # nrel x d
-            node_message = torch.mm(subj_pred_map, message_pred_to_subj) / (subj_pred_map.sum(1, keepdim=True) + 1e-5) \
-                          + torch.mm(obj_pred_map, message_pred_to_obj) / (obj_pred_map.sum(1, keepdim=True) + 1e-5)
+            node_message = (torch.mm(subj_pred_map, message_pred_to_subj) / (subj_pred_map.sum(1, keepdim=True) + 1e-5) \
+                          + torch.mm(obj_pred_map, message_pred_to_obj) / (obj_pred_map.sum(1, keepdim=True) + 1e-5)) / 2.
             hx_obj.append(self.node_gru(node_message, hx_obj[t]))
 
             '''update predicat features'''
             message_subj_to_pred = self.subj_edge_gate(torch.cat([sub_vert, hx_edge[t]], 1)) * sub_vert  # nrel x d
             message_obj_to_pred = self.obj_edge_gate(torch.cat([obj_vert, hx_edge[t]], 1)) * obj_vert    # nrel x d
-            edge_message = message_subj_to_pred + message_obj_to_pred
+            edge_message = (message_subj_to_pred + message_obj_to_pred) / 2.
             hx_edge.append(self.edge_gru(edge_message, hx_edge[t]))
 
         '''compute results and losses'''

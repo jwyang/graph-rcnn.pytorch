@@ -38,7 +38,7 @@ class BasicSceneGraphEvaluator:
         np.save(fn, self.result_dict)
 
     def print_stats(self, logger):
-        logger.info('======================' + self.mode + '============================')
+        logger.info('===================' + self.mode + '(motif)' + '=========================')
         for k, v in self.result_dict[self.mode + '_recall'].items():
             logger.info('%s-recall@%i: %f' % (self.mode, k, np.mean(v)))
 
