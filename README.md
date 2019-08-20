@@ -86,6 +86,13 @@ Install all the python dependencies using pip:
 pip install -r requirements.txt
 ```
 
+and libraries using apt-get:
+```
+apt-get update
+apt-get install libglib2.0-0
+apt-get install libsm6
+```
+
 ### Data Preparation
 
 * Visual Genome benchmarking dataset:
