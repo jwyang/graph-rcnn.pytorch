@@ -86,6 +86,13 @@ Install all the python dependencies using pip:
 pip install -r requirements.txt
 ```
 
+and libraries using apt-get:
+```
+apt-get update
+apt-get install libglib2.0-0
+apt-get install libsm6
+```
+
 ### Data Preparation
 
 * Visual Genome benchmarking dataset:
@@ -195,14 +202,23 @@ where CHECKPOINT is the iteration number. By default it will evaluate the whole 
 
 :warning: If you want to evaluate the model at your own path, just need to change the MODEL.WEIGHT_DET to your own path in faster_rcnn_res101.yaml.
 
+### Evaluate scene graph frequency baseline model:
+
+In this case, you do not need any sgg model checkpoints. To get the evaluation result, object detector is enough. Run the following command:
+```
+python main.py --config-file configs/sgg_res101_{joint/step}.yaml --inference --use_freq_prior
+```
+
+In the yaml file, please specify the path MODEL.WEIGHT_DET for your object detector.
+
 ### Evaluate scene graph generation model:
 
-* Vanilla scene graph generation model with resnet-101 as backbone:
+* Scene graph generation model with resnet-101 as backbone:
 ```
 python main.py --config-file configs/sgg_res101_{joint/step}.yaml --inference --resume $CHECKPOINT --algorithm $ALGORITHM
 ```
 
-* Vanilla scene graph generation model with resnet-101 as backbone and use frequency prior:
+* Scene graph generation model with resnet-101 as backbone and use frequency prior:
 ```
 python main.py --config-file configs/sgg_res101_{joint/step}.yaml --inference --resume $CHECKPOINT --algorithm $ALGORITHM --use_freq_prior
 ```
