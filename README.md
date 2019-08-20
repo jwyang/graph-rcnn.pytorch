@@ -71,6 +71,14 @@ this repo | Res-101 | grcnn | 8 | 5e-3 | 20k,30k | 40k | - | - | -
 
 \* you can click 'this repo' in above table to download the checkpoints.
 
+## Tips and Tricks
+
+Some important observations based on the experiments:
+
+* **Using per-category NMS is important!!!!**. We have found that the main reason for the huge gap between the imp-style models and motif-style models is that the later used the per-category nms before sending the graph into the scene graph generator. Will put the quantitative comparison here.
+
+* **Different calculations for frequency prior result in differnt results***. Even change a little bit to the calculation fo frequency prior, the performance of scene graph generation model vary much. In neural motiftnet, we found they turn on filter_non_overlap, filter_empty_rels to filter some triplets and images.
+
 ## Installation
 
 ### Prerequisites
