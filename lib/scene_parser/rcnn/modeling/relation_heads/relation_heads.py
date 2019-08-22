@@ -33,7 +33,7 @@ class ROIRelationHead(torch.nn.Module):
         elif cfg.MODEL.ALGORITHM == "sg_msdn":
             self.rel_predictor = build_msdn_model(cfg, in_channels)
         elif cfg.MODEL.ALGORITHM == "sg_grcnn":
-            self.rel_predictor = build_grcnn_model(cfg, in_channels)            
+            self.rel_predictor = build_grcnn_model(cfg, in_channels)
         elif cfg.MODEL.ALGORITHM == "sg_reldn":
             self.rel_predictor = build_reldn_model(cfg, in_channels)
 
@@ -110,7 +110,7 @@ class ROIRelationHead(torch.nn.Module):
             # extract features that will be fed to the final classifier. The
             # feature_extractor generally corresponds to the pooler + heads
             x, obj_class_logits, pred_class_logits = self.rel_predictor(features, proposals, proposal_pairs)
-
+        
         if not self.training:
             result = self.post_processor((pred_class_logits), proposal_pairs, use_freq_prior=self.cfg.MODEL.USE_FREQ_PRIOR)
             # boxes_per_image = [len(proposal) for proposal in proposals]

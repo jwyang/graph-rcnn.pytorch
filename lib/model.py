@@ -50,7 +50,7 @@ class SceneGraphGeneration:
         self.scene_parser = build_scene_parser(cfg); self.scene_parser.to(self.device)
         self.sp_optimizer, self.sp_scheduler, self.sp_checkpointer, self.extra_checkpoint_data = \
             build_scene_parser_optimizer(cfg, self.scene_parser, local_rank=local_rank, distributed=distributed)
-
+        
         self.arguments.update(self.extra_checkpoint_data)
 
     def _get_freq_prior(self, must_overlap=False):

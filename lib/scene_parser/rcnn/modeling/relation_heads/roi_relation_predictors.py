@@ -4,7 +4,7 @@ import torch
 from torch import nn
 
 
-@registry.ROI_RELATION_PREDICTOR.register("FastRCNNPredictor")
+@registry.ROI_RELATION_PREDICTOR.register("FastRCNNRelationPredictor")
 class FastRCNNPredictor(nn.Module):
     def __init__(self, config, in_channels):
         super(FastRCNNPredictor, self).__init__()
@@ -26,7 +26,7 @@ class FastRCNNPredictor(nn.Module):
         return cls_logit
 
 
-@registry.ROI_RELATION_PREDICTOR.register("FPNPredictor")
+@registry.ROI_RELATION_PREDICTOR.register("FPNRelationPredictor")
 class FPNPredictor(nn.Module):
     def __init__(self, cfg, in_channels):
         super(FPNPredictor, self).__init__()

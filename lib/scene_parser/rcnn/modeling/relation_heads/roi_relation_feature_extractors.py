@@ -10,7 +10,7 @@ from lib.scene_parser.rcnn.modeling.make_layers import group_norm
 from lib.scene_parser.rcnn.modeling.make_layers import make_fc
 
 
-@registry.ROI_RELATION_FEATURE_EXTRACTORS.register("ResNet50Conv5ROIFeatureExtractor")
+@registry.ROI_RELATION_FEATURE_EXTRACTORS.register("ResNet50Conv5ROIRelationFeatureExtractor")
 class ResNet50Conv5ROIFeatureExtractor(nn.Module):
     def __init__(self, config, in_channels):
         super(ResNet50Conv5ROIFeatureExtractor, self).__init__()
@@ -53,7 +53,7 @@ class ResNet50Conv5ROIFeatureExtractor(nn.Module):
         return x
 
 
-@registry.ROI_RELATION_FEATURE_EXTRACTORS.register("FPN2MLPFeatureExtractor")
+@registry.ROI_RELATION_FEATURE_EXTRACTORS.register("FPN2MLPRelationFeatureExtractor")
 class FPN2MLPFeatureExtractor(nn.Module):
     """
     Heads for FPN for classification
@@ -88,7 +88,7 @@ class FPN2MLPFeatureExtractor(nn.Module):
         return x
 
 
-@registry.ROI_RELATION_FEATURE_EXTRACTORS.register("FPNXconv1fcFeatureExtractor")
+@registry.ROI_RELATION_FEATURE_EXTRACTORS.register("FPNXconv1fcRelationFeatureExtractor")
 class FPNXconv1fcFeatureExtractor(nn.Module):
     """
     Heads for FPN for classification

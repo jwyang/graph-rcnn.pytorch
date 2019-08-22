@@ -24,7 +24,7 @@ class PostProcessor(nn.Module):
         min_detections_per_img=0,
         box_coder=None,
         cls_agnostic_bbox_reg=False,
-        bbox_aug_enabled=False,
+        bbox_aug_enabled=True,
         relation_on=False
     ):
         """
@@ -251,7 +251,7 @@ def make_roi_box_post_processor(cfg):
     detections_per_img = cfg.MODEL.ROI_HEADS.DETECTIONS_PER_IMG
     min_detections_per_img = cfg.MODEL.ROI_HEADS.MIN_DETECTIONS_PER_IMG
     cls_agnostic_bbox_reg = cfg.MODEL.CLS_AGNOSTIC_BBOX_REG
-    bbox_aug_enabled = cfg.TEST.BBOX_AUG.ENABLED
+    bbox_aug_enabled = cfg.TEST.BBOX_AUG.ENABLED or (not cfg.inference)
 
     postprocessor = PostProcessor(
         score_thresh,

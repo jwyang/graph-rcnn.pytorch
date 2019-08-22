@@ -21,7 +21,7 @@ class _Collection_Unit(nn.Module):
     def forward(self, target, source, attention_base):
         # assert attention_base.size(0) == source.size(0), "source number must be equal to attention number"
         fc_out = self.fc(source)
-        collect = torch.mm(attention_base, fc_out)
+        collect = torch.mm(attention_base, fc_out)  # Nobj x Nrel Nrel x dim
         collect_avg = collect / (attention_base.sum(1).view(collect.size(0), 1) + 1e-7)
         return F.relu(collect_avg)
 

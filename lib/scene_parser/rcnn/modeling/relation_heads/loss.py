@@ -91,6 +91,7 @@ class FastRCNNLossComputation(object):
         # NB: need to clamp the indices because we can have a single
         # GT in the image, and matched_idxs can be -2, which goes
         # out of bounds
+
         if self.use_matched_pairs_only and (matched_idxs >= 0).sum() > self.minimal_matched_pairs:
             # filter all matched_idxs < 0
             proposal_pairs = proposal_pairs[matched_idxs >= 0]
@@ -218,7 +219,7 @@ def make_roi_relation_loss_evaluator(cfg):
     box_coder = BoxCoder(weights=bbox_reg_weights)
 
     fg_bg_sampler = BalancedPositiveNegativePairSampler(
-        cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE, cfg.MODEL.ROI_HEADS.POSITIVE_FRACTION
+        cfg.MODEL.ROI_RELATION_HEAD.BATCH_SIZE_PER_IMAGE, cfg.MODEL.ROI_RELATION_HEAD.POSITIVE_FRACTION
     )
 
     cls_agnostic_bbox_reg = cfg.MODEL.CLS_AGNOSTIC_BBOX_REG

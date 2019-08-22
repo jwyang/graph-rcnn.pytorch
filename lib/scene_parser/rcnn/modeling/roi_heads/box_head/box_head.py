@@ -52,7 +52,7 @@ class ROIBoxHead(torch.nn.Module):
         features = x.split(boxes_per_image, dim=0)
         for proposal, feature in zip(proposals, features):
             proposal.add_field("features", self.avgpool(feature))
-        if not self.training:
+        if not self.training and self.cfg.inference:
             result = self.post_processor((class_logits, box_regression), proposals)
             if targets:
                 result = self.loss_evaluator.prepare_labels(result, targets)

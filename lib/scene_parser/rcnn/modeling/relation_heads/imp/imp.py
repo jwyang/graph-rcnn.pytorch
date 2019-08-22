@@ -19,11 +19,11 @@ class IMP(nn.Module):
         self.dim = 512
         self.update_step = cfg.MODEL.ROI_RELATION_HEAD.IMP_FEATURE_UPDATE_STEP
         self.avgpool = nn.AdaptiveAvgPool2d(1)
-        self.obj_feature_extractor = make_roi_relation_box_feature_extractor(cfg, in_channels)
+        # self.obj_feature_extractor = make_roi_relation_box_feature_extractor(cfg, in_channels)
         self.pred_feature_extractor = make_roi_relation_feature_extractor(cfg, in_channels)
 
         self.obj_embedding = nn.Sequential(
-            nn.Linear(self.obj_feature_extractor.out_channels, self.dim),
+            nn.Linear(self.pred_feature_extractor.out_channels, self.dim),
             nn.ReLU(True),
             nn.Linear(self.dim, self.dim),
         )
@@ -59,7 +59,7 @@ class IMP(nn.Module):
 
         subj_pred_map = rel_inds.new(sum([len(proposal) for proposal in proposals]), rel_inds.shape[0]).fill_(0).float().detach()
         obj_pred_map = rel_inds.new(sum([len(proposal) for proposal in proposals]), rel_inds.shape[0]).fill_(0).float().detach()
-
+        
         subj_pred_map.scatter_(0, (rel_inds[:, 0].contiguous().view(1, -1)), 1)
         obj_pred_map.scatter_(0, (rel_inds[:, 1].contiguous().view(1, -1)), 1)
 
@@ -67,9 +67,8 @@ class IMP(nn.Module):
 
     def forward(self, features, proposals, proposal_pairs):
         rel_inds, subj_pred_map, obj_pred_map = self._get_map_idxs(proposals, proposal_pairs)
-        # x_obj = torch.cat([proposal.get_field("features").detach() for proposal in proposals], 0)
-        # features = [feature.detach() for feature in features]
-        x_obj = self.avgpool(self.obj_feature_extractor(features, proposals))
+        x_obj = torch.cat([proposal.get_field("features").detach() for proposal in proposals], 0)
+        # x_obj = self.avgpool(self.obj_feature_extractor(features, proposals))
         x_pred = self.avgpool(self.pred_feature_extractor(features, proposal_pairs))
         x_obj = x_obj.view(x_obj.size(0), -1); x_pred = x_pred.view(x_pred.size(0), -1)
         x_obj = self.obj_embedding(x_obj); x_pred = self.pred_embedding(x_pred)
