@@ -16,6 +16,7 @@ This project is a set of reimplemented representative scene graph generation mod
 * [Scene Graph Generation by Iterative Message Passing](https://arxiv.org/pdf/1701.02426.pdf), Xu et al. CVPR 2017
 * [Scene Graph Generation from Objects, Phrases and Region Captions](https://arxiv.org/pdf/1707.09700.pdf), Li et al. ICCV 2017
 * [Neural Motifs: Scene Graph Parsing with Global Context](https://arxiv.org/pdf/1711.06640.pdf), Zellers et al. CVPR 2018
+* [Graphical Contrastive Losses for Scene Graph Generation](https://arxiv.org/pdf/1903.02728.pdf), Zhang et al, CVPR 2019
 
 Our reimplementations are based on the following repositories:
 
@@ -24,6 +25,7 @@ Our reimplementations are based on the following repositories:
 * [scene-graph-TF-release](https://github.com/danfeiX/scene-graph-TF-release)
 * [MSDN](https://github.com/yikang-li/MSDN)
 * [neural-motifs](https://github.com/rowanz/neural-motifs)
+* [Graphical Contrastive Losses](https://github.com/NVIDIA/ContrastiveLosses4VRD/tree/pytorch1_0)
 
 ## Why we need this repository?
 
@@ -38,6 +40,7 @@ The goal of gathering all these representative methods into a single repo is to 
 - [x] Neural Motif (Frequency Prior Baseline) (:balloon: 2019-07-08)
 - [ ] Neural Motif
 - [ ] Graph R-CNN
+- [ ] RelDN (Contrastive Losses)
 
 ## Benchmarking
 
@@ -70,6 +73,14 @@ this repo | Res-101 | msdn | 8 | 5e-3 | 20k,30k | 40k | - | - | -
 this repo | Res-101 | grcnn | 8 | 5e-3 | 20k,30k | 40k | - | - | -
 
 \* you can click 'this repo' in above table to download the checkpoints.
+
+## Tips and Tricks
+
+Some important observations based on the experiments:
+
+* **Using per-category NMS is important!!!!**. We have found that the main reason for the huge gap between the imp-style models and motif-style models is that the later used the per-category nms before sending the graph into the scene graph generator. Will put the quantitative comparison here.
+
+* **Different calculations for frequency prior result in differnt results***. Even change a little bit to the calculation fo frequency prior, the performance of scene graph generation model vary much. In neural motiftnet, we found they turn on filter_non_overlap, filter_empty_rels to filter some triplets and images.
 
 ## Installation
 
