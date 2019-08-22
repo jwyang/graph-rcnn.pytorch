@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 from lib.scene_parser.rcnn.modeling import registry
+import torch
 from torch import nn
 
 
@@ -14,6 +15,7 @@ class FastRCNNPredictor(nn.Module):
         num_classes = config.MODEL.ROI_RELATION_HEAD.NUM_CLASSES
         self.avgpool = nn.AdaptiveAvgPool2d(1)
         self.cls_score = nn.Linear(num_inputs, num_classes)
+        # self.cls_score.weight = torch.nn.init.xavier_normal(self.cls_score.weight, gain=1.0)
         nn.init.normal_(self.cls_score.weight, mean=0, std=0.01)
         nn.init.constant_(self.cls_score.bias, 0)
 
