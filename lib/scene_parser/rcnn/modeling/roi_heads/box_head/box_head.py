@@ -15,6 +15,7 @@ class ROIBoxHead(torch.nn.Module):
 
     def __init__(self, cfg, in_channels):
         super(ROIBoxHead, self).__init__()
+        self.cfg = cfg
         self.avgpool = nn.AdaptiveAvgPool2d(1)
         self.feature_extractor = make_roi_box_feature_extractor(cfg, in_channels)
         self.predictor = make_roi_box_predictor(
