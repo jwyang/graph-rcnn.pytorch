@@ -54,7 +54,7 @@ source  | backbone | model | bs | lr  | lr_decay | max_iter | mAP@0.5 | mAP@0.50
 source | backbone | model | bs | lr | lr_decay | max_iter | sgdet@20 | sgdet@50 | sgdet@100
 -------|--------|--------|:------:|:-------:|:------:|:------:|:------:|:-------:|:-------:
 [this repo](https://drive.google.com/open?id=1Vb-gX3_OLhzgdNseXgS_2DiLmJ8qiG8P) | Res-101 | freq | 6 | 5e-3 | 70k,90k | 100k | 19.4 | 25.0 | 28.5
-[motifnet](https://github.com/rowanz/neural-motifs) | VGG-16 | freq | - | N/A | N/A | N/A | 17.7 | 23.5 | 27.6
+[motifnet](https://github.com/rowanz/neural-motifs) | VGG-16 | freq | - | - | - | - | 17.7 | 23.5 | 27.6
 <!-- Resnet-101 | freq-overlap | 6 | 5e-3 | (70k, 90k) | 100k | - | - | - -->
 \* freq = frequency prior baseline
 
