@@ -70,7 +70,7 @@ source | backbone | model | bs | lr | lr_decay | max_iter | sgdet@20 | sgdet@50 
 this repo | Res-101 | vanilla | 8 | 5e-3 | 20k,30k | 40k | 10.5 | 13.8 | 16.1
 this repo | Res-101 | imp | 8 | 5e-3 | 20k,30k | 40k | 16.7 | 20.7 | 23.0
 [motifnet](https://github.com/rowanz/neural-motifs) | VGG-16 | imp | - | -| - | - | 14.6 | 20.7 | 24.5
-this repo | Res-101 | msdn | 8 | 5e-3 | 20k,30k | 40k | - | - | -
+this repo | Res-101 | msdn | 8 | 5e-3 | 20k,30k | 40k | 17.0 | 21.0 | 23.3
 this repo | Res-101 | grcnn | 8 | 5e-3 | 20k,30k | 40k | - | - | -
 
 \* you can click 'this repo' in above table to download the checkpoints.
