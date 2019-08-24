@@ -38,9 +38,10 @@ The goal of gathering all these representative methods into a single repo is to 
 - [x] Iterative Message Passing (IMP) (:balloon: 2019-07-07)
 - [x] Multi-level Scene Description Network (MSDN:no region caption) (:balloon: 2019-08-24)
 - [x] Neural Motif (Frequency Prior Baseline) (:balloon: 2019-07-08)
-- [ ] Neural Motif
+- [x] Graph R-CNN (w/o relpn) (:balloon: 2019-08-24)
 - [ ] Graph R-CNN
-- [ ] RelDN (Contrastive Losses)
+- [ ] Neural Motif
+- [ ] RelDN (Graphical Contrastive Losses)
 
 ## Benchmarking
 
