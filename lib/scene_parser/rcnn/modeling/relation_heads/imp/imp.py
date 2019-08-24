@@ -59,7 +59,7 @@ class IMP(nn.Module):
 
         subj_pred_map = rel_inds.new(sum([len(proposal) for proposal in proposals]), rel_inds.shape[0]).fill_(0).float().detach()
         obj_pred_map = rel_inds.new(sum([len(proposal) for proposal in proposals]), rel_inds.shape[0]).fill_(0).float().detach()
-        
+
         subj_pred_map.scatter_(0, (rel_inds[:, 0].contiguous().view(1, -1)), 1)
         obj_pred_map.scatter_(0, (rel_inds[:, 1].contiguous().view(1, -1)), 1)
 
@@ -67,7 +67,7 @@ class IMP(nn.Module):
 
     def forward(self, features, proposals, proposal_pairs):
         rel_inds, subj_pred_map, obj_pred_map = self._get_map_idxs(proposals, proposal_pairs)
-        x_obj = torch.cat([proposal.get_field("features").detach() for proposal in proposals], 0)
+        x_obj = torch.cat([proposal.get_field("features") for proposal in proposals], 0)
         # x_obj = self.avgpool(self.obj_feature_extractor(features, proposals))
         x_pred = self.avgpool(self.pred_feature_extractor(features, proposal_pairs))
         x_obj = x_obj.view(x_obj.size(0), -1); x_pred = x_pred.view(x_pred.size(0), -1)

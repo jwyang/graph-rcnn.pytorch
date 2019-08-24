@@ -31,6 +31,9 @@ class SceneGraphGeneration:
         self.data_loader_train = build_data_loader(cfg, split="train", is_distributed=distributed)
         self.data_loader_test = build_data_loader(cfg, split="test", is_distributed=distributed)
 
+        cfg.DATASET.IND_TO_OBJECT = self.data_loader_train.dataset.ind_to_classes
+        cfg.DATASET.IND_TO_PREDICATE = self.data_loader_train.dataset.ind_to_predicates
+
         logger = logging.getLogger("scene_graph_generation.trainer")
         logger.info("Train data size: {}".format(len(self.data_loader_train.dataset)))
         logger.info("Test data size: {}".format(len(self.data_loader_test.dataset)))
@@ -50,7 +53,7 @@ class SceneGraphGeneration:
         self.scene_parser = build_scene_parser(cfg); self.scene_parser.to(self.device)
         self.sp_optimizer, self.sp_scheduler, self.sp_checkpointer, self.extra_checkpoint_data = \
             build_scene_parser_optimizer(cfg, self.scene_parser, local_rank=local_rank, distributed=distributed)
-        
+
         self.arguments.update(self.extra_checkpoint_data)
 
     def _get_freq_prior(self, must_overlap=False):

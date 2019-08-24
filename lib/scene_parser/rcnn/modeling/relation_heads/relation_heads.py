@@ -110,7 +110,7 @@ class ROIRelationHead(torch.nn.Module):
             # extract features that will be fed to the final classifier. The
             # feature_extractor generally corresponds to the pooler + heads
             x, obj_class_logits, pred_class_logits = self.rel_predictor(features, proposals, proposal_pairs)
-        
+
         if not self.training:
             result = self.post_processor((pred_class_logits), proposal_pairs, use_freq_prior=self.cfg.MODEL.USE_FREQ_PRIOR)
             # boxes_per_image = [len(proposal) for proposal in proposals]
@@ -123,7 +123,10 @@ class ROIRelationHead(torch.nn.Module):
         if self.cfg.MODEL.ALGORITHM in ["sg_baseline", "sg_reldn"]:
             loss_obj_classifier = 0
         else:
-            loss_obj_classifier = self.loss_evaluator.obj_classification_loss(proposals, [obj_class_logits])
+            if self.rel_predictor.update_step > 0:
+                loss_obj_classifier = self.loss_evaluator.obj_classification_loss(proposals, [obj_class_logits])
+            else:
+                loss_obj_classifier = 0
 
         loss_pred_classifier = self.loss_evaluator([pred_class_logits])
         return (

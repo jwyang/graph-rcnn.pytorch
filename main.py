@@ -107,7 +107,7 @@ def main():
     cfg.inference = args.inference
     cfg.MODEL.USE_FREQ_PRIOR = args.use_freq_prior
     cfg.MODEL.ALGORITHM = args.algorithm
-    cfg.freeze()
+    # cfg.freeze()
 
     if not os.path.exists("logs") and get_rank() == 0:
         os.mkdir("logs")

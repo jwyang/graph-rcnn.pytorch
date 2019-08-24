@@ -26,7 +26,7 @@ class FastRCNNLossComputation(object):
         fg_bg_pair_sampler,
         box_coder,
         cls_agnostic_bbox_reg=False,
-        use_matched_pairs_only=True,
+        use_matched_pairs_only=False,
         minimal_matched_pairs=0,
     ):
         """
@@ -47,10 +47,11 @@ class FastRCNNLossComputation(object):
         match_quality_matrix = boxlist_iou(target, proposal)
         temp = []
         target_box_pairs = []
+        # import pdb; pdb.set_trace()
         for i in range(match_quality_matrix.shape[0]):
             for j in range(match_quality_matrix.shape[0]):
-                match_i = match_quality_matrix[i].view(1, -1)
-                match_j = match_quality_matrix[j].view(-1, 1)
+                match_i = match_quality_matrix[i].view(-1, 1)
+                match_j = match_quality_matrix[j].view(1, -1)
                 match_ij = ((match_i + match_j) / 2)
                 # rmeove duplicate index
                 non_duplicate_idx = (torch.eye(match_ij.shape[0]).view(-1) == 0).nonzero().view(-1).to(match_ij.device)
@@ -60,6 +61,8 @@ class FastRCNNLossComputation(object):
                 boxi = target.bbox[i]; boxj = target.bbox[j]
                 box_pair = torch.cat((boxi, boxj), 0)
                 target_box_pairs.append(box_pair)
+
+        # import pdb; pdb.set_trace()
 
         match_pair_quality_matrix = torch.stack(temp, 0).view(len(temp), -1)
         target_box_pairs = torch.stack(target_box_pairs, 0)
@@ -192,7 +195,11 @@ class FastRCNNLossComputation(object):
 
         labels = cat([proposal.get_field("labels") for proposal in proposals], dim=0)
 
-        classification_loss = F.cross_entropy(class_logits, labels)
+        rel_fg_cnt = len(labels.nonzero())
+        rel_bg_cnt = labels.shape[0] - rel_fg_cnt
+        ce_weights = labels.new(class_logits.size(1)).fill_(1).float()
+        ce_weights[0] = float(rel_fg_cnt) / (rel_bg_cnt + 1e-5)
+        classification_loss = F.cross_entropy(class_logits, labels, weight=ce_weights)
 
         return classification_loss
 
