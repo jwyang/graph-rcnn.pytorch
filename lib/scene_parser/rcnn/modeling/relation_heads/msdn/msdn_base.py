@@ -23,7 +23,7 @@ class Message_Passing_Unit_v2(nn.Module):
 
 		# print '[unary_term, pair_term]', [unary_term, pair_term]
 		gate = self.w(F.relu(unary_term)) * self.w(F.relu(pair_term))
-		gate = F.sigmoid(gate.sum(1))
+		gate = torch.sigmoid(gate.sum(1))
 		# print 'gate', gate
 		output = pair_term * gate.expand(gate.size()[0], pair_term.size()[1])
 
@@ -47,7 +47,7 @@ class Message_Passing_Unit_v1(nn.Module):
 		# print '[unary_term, pair_term]', [unary_term, pair_term]
 		gate = torch.cat([unary_term, pair_term], 1)
 		gate = F.relu(gate)
-		gate = F.sigmoid(self.w(gate)).mean(1)
+		gate = torch.sigmoid(self.w(gate)).mean(1)
 		# print 'gate', gate
 		output = pair_term * gate.view(-1, 1).expand(gate.size()[0], pair_term.size()[1])
 
@@ -69,7 +69,7 @@ class Gated_Recurrent_Unit(nn.Module):
 
 
 class MSDN_BASE(nn.Module):
-	def __init__(self, fea_size, dropout=False, gate_width=128, use_region=True, use_kernel_function=False):
+	def __init__(self, fea_size, dropout=False, gate_width=128, use_region=False, use_kernel_function=False):
 		super(MSDN_BASE, self).__init__()
 		#self.w_object = Parameter()
 		if use_kernel_function:
@@ -83,14 +83,7 @@ class MSDN_BASE(nn.Module):
 		self.gate_pred2obj = Message_Passing_Unit(fea_size, gate_width)
 
 		self.GRU_object = Gated_Recurrent_Unit(fea_size, dropout) # nn.GRUCell(fea_size, fea_size) #
-		self.GRU_phrase = Gated_Recurrent_Unit(fea_size, dropout)
-
-		if use_region:
-			self.gate_pred2reg = Message_Passing_Unit(fea_size, gate_width)
-			self.gate_reg2pred = Message_Passing_Unit(fea_size, gate_width)
-			self.GRU_region = Gated_Recurrent_Unit(fea_size, dropout)
-
-
+		self.GRU_pred = Gated_Recurrent_Unit(fea_size, dropout)
 
 	def forward(self, feature_obj, feature_phrase, feature_region, mps_object, mps_phrase, mps_region):
 		raise Exception('Please implement the forward function')
