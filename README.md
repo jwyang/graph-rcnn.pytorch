@@ -68,7 +68,7 @@ source | backbone | model | bs | lr | lr_decay | max_iter | sgdet@20 | sgdet@50 
 source | backbone | model | bs | lr | lr_decay | max_iter | sgdet@20 | sgdet@50 | sgdet@100
 -------|--------|--------|:------:|:-------:|:------:|:------:|:------:|:-------:|:-------:
 this repo | Res-101 | vanilla | 8 | 5e-3 | 20k,30k | 40k | 10.5 | 13.8 | 16.1
-this repo | Res-101 | imp | 8 | 5e-3 | 20k,30k | 40k | - | - | -
+this repo | Res-101 | imp | 8 | 5e-3 | 20k,30k | 40k | 16.7 | 20.7 | 23.0
 this repo | Res-101 | msdn | 8 | 5e-3 | 20k,30k | 40k | - | - | -
 this repo | Res-101 | grcnn | 8 | 5e-3 | 20k,30k | 40k | - | - | -
 
