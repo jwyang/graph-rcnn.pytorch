@@ -65,13 +65,13 @@ source | backbone | model | bs | lr | lr_decay | max_iter | sgdet@20 | sgdet@50 
 <!---[this repo](https://drive.google.com/open?id=1Vb-gX3_OLhzgdNseXgS_2DiLmJ8qiG8P) | Res-101 | freq | 6 | 5e-3 | 70k,90k | 100k | 19.4 | 25.0 | 28.5-->
 
 ### Scene Graph Generation (Step training)
-source | backbone | model | bs | lr | lr_decay | max_iter | sgdet@20 | sgdet@50 | sgdet@100
--------|--------|--------|:------:|:-------:|:------:|:------:|:------:|:-------:|:-------:
-this repo | Res-101 | vanilla | 8 | 5e-3 | 20k,30k | 40k | 10.5 | 13.8 | 16.1
-this repo | Res-101 | imp | 8 | 5e-3 | 20k,30k | 40k | 16.7 | 20.7 | 23.0
-[motifnet](https://github.com/rowanz/neural-motifs) | VGG-16 | imp | - | -| - | - | 14.6 | 20.7 | 24.5
-this repo | Res-101 | msdn | 8 | 5e-3 | 20k,30k | 40k | 17.0 | 21.0 | 23.3
-this repo | Res-101 | grcnn | 8 | 5e-3 | 20k,30k | 40k | - | - | -
+source | backbone | model | bs | lr | lr_decay | max_iter | mAP@0.5 | sgdet@20 | sgdet@50 | sgdet@100
+-------|--------|--------|:------:|:-------:|:------:|:------:|:------:|:-------:|:-------:|:-------:
+this repo | Res-101 | vanilla | 8 | 5e-3 | 20k,30k | 40k | 24.8 | 10.5 | 13.8 | 16.1
+this repo | Res-101 | imp | 8 | 5e-3 | 20k,30k | 40k | 24.2 |16.7 | 21.7 | 25.2
+[motifnet](https://github.com/rowanz/neural-motifs) | VGG-16 | imp | - | -| - | - | - | 14.6 | 20.7 | 24.5
+this repo | Res-101 | msdn | 8 | 5e-3 | 20k,30k | 40k | - | - | - | -
+this repo | Res-101 | grcnn | 8 | 5e-3 | 20k,30k | 40k | - | - | - | -
 
 \* you can click 'this repo' in above table to download the checkpoints.
 
