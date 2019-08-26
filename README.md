@@ -36,41 +36,43 @@ The goal of gathering all these representative methods into a single repo is to 
 - [x] Faster R-CNN Baseline (:balloon: 2019-07-04)
 - [x] Scene Graph Generation Baseline (:balloon: 2019-07-06)
 - [x] Iterative Message Passing (IMP) (:balloon: 2019-07-07)
-- [ ] Multi-level Scene Description Network (MSDN)
+- [x] Multi-level Scene Description Network (MSDN:no region caption) (:balloon: 2019-08-24)
 - [x] Neural Motif (Frequency Prior Baseline) (:balloon: 2019-07-08)
-- [ ] Neural Motif
+- [x] Graph R-CNN (w/o relpn) (:balloon: 2019-08-24)
 - [ ] Graph R-CNN
-- [ ] RelDN (Contrastive Losses)
+- [ ] Neural Motif
+- [ ] RelDN (Graphical Contrastive Losses)
 
 ## Benchmarking
 
 ### Object Detection
 
-source  | backbone | model | bs | lr  | lr_decay | max_iter | mAP@0.5 | mAP@0.50:0.95
---------|--------|--------|:------:|:------:|:-------:|:------:|:------:|:------:
-[this repo](https://drive.google.com/open?id=1THLvK8q2VRx6K3G7BGo0FCe-D0EWP9o1) | Res-101 | faster r-cnn | 6 | 5e-3 | 70k,90k | 100k | 24.8 | 12.8
+source  | backbone | model | bs | lr  | lr_decay | mAP@0.5 | mAP@0.50:0.95
+--------|--------|--------|:------:|:------:|:-------:|:------:|:------:
+[this repo](https://drive.google.com/open?id=1THLvK8q2VRx6K3G7BGo0FCe-D0EWP9o1) | Res-101 | faster r-cnn | 6 | 5e-3 | 70k,90k | 24.8 | 12.8
 
 ### Scene Graph Generation (Frequency Prior Only)
-source | backbone | model | bs | lr | lr_decay | max_iter | sgdet@20 | sgdet@50 | sgdet@100
--------|--------|--------|:------:|:-------:|:------:|:------:|:------:|:-------:|:-------:
-[this repo](https://drive.google.com/open?id=1Vb-gX3_OLhzgdNseXgS_2DiLmJ8qiG8P) | Res-101 | freq | 6 | 5e-3 | 70k,90k | 100k | 19.4 | 25.0 | 28.5
-[motifnet](https://github.com/rowanz/neural-motifs) | VGG-16 | freq | N/A | N/A | N/A | N/A | 17.7 | 23.5 | 27.6
+source | backbone | model | bs | lr | lr_decay | sgdet@20 | sgdet@50 | sgdet@100
+-------|--------|--------|:------:|:-------:|:------:|:------:|:-------:|:-------:
+[this repo](https://drive.google.com/open?id=1Vb-gX3_OLhzgdNseXgS_2DiLmJ8qiG8P) | Res-101 | freq | 6 | 5e-3 | 70k,90k | 19.4 | 25.0 | 28.5
+[motifnet](https://github.com/rowanz/neural-motifs) | VGG-16 | freq | - | - | - | 17.7 | 23.5 | 27.6
 <!-- Resnet-101 | freq-overlap | 6 | 5e-3 | (70k, 90k) | 100k | - | - | - -->
 \* freq = frequency prior baseline
 
 ### Scene Graph Generation (Joint training)
-source | backbone | model | bs | lr | lr_decay | max_iter | sgdet@20 | sgdet@50 | sgdet@100
--------|--------|--------|:------:|:-------:|:------:|:------:|:------:|:-------:|:-------:
-[this repo](https://drive.google.com/open?id=1Vb-gX3_OLhzgdNseXgS_2DiLmJ8qiG8P) | Res-101 | vanilla | 6 | 5e-3 | 70k,90k | 100k | 10.4 | 14.3 | 16.8
+source | backbone | model | bs | lr | lr_decay | sgdet@20 | sgdet@50 | sgdet@100
+-------|--------|--------|:------:|:-------:|:------:|:------:|:-------:|:-------:
+[this repo](https://drive.google.com/open?id=1Vb-gX3_OLhzgdNseXgS_2DiLmJ8qiG8P) | Res-101 | vanilla | 6 | 5e-3 | 70k,90k | 10.4 | 14.3 | 16.8
 <!---[this repo](https://drive.google.com/open?id=1Vb-gX3_OLhzgdNseXgS_2DiLmJ8qiG8P) | Res-101 | freq | 6 | 5e-3 | 70k,90k | 100k | 19.4 | 25.0 | 28.5-->
 
 ### Scene Graph Generation (Step training)
-source | backbone | model | bs | lr | lr_decay | max_iter | sgdet@20 | sgdet@50 | sgdet@100
--------|--------|--------|:------:|:-------:|:------:|:------:|:------:|:-------:|:-------:
-this repo | Res-101 | vanilla | 8 | 5e-3 | 20k,30k | 40k | 10.5 | 13.8 | 16.1
-this repo | Res-101 | imp | 8 | 5e-3 | 20k,30k | 40k | - | - | -
-this repo | Res-101 | msdn | 8 | 5e-3 | 20k,30k | 40k | - | - | -
-this repo | Res-101 | grcnn | 8 | 5e-3 | 20k,30k | 40k | - | - | -
+source | backbone | model | bs | lr | lr_decay | mAP@0.5 | sgdet@20 | sgdet@50 | sgdet@100
+-------|--------|--------|:------:|:-------:|:------:|:------:|:-------:|:-------:|:-------:
+this repo | Res-101 | vanilla | 8 | 5e-3 | 20k,30k | 24.8 | 10.5 | 13.8 | 16.1
+this repo | Res-101 | imp | 8 | 5e-3 | 20k,30k | 24.2 |16.7 | 21.7 | 25.2
+[motifnet](https://github.com/rowanz/neural-motifs) | VGG-16 | imp | -| - | - | - | 14.6 | 20.7 | 24.5
+this repo | Res-101 | msdn | 8 | 5e-3 | 20k,30k | - | - | - | -
+this repo | Res-101 | grcnn | 8 | 5e-3 | 20k,30k | - | - | - | -
 
 \* you can click 'this repo' in above table to download the checkpoints.
 
