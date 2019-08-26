@@ -40,20 +40,20 @@ class RelDN(nn.Module):
             nn.Linear(self.dim, self.dim),
         )
 
-        # self.rel_embedding = nn.Sequential(
-        #     nn.Linear(3 * self.dim, self.dim),
-        #     nn.ReLU(True),
-        #     nn.Linear(self.dim, self.dim),
-        #     nn.ReLU(True)
-        # )
+        self.rel_embedding = nn.Sequential(
+            nn.Linear(3 * self.dim, self.dim),
+            nn.ReLU(True),
+            nn.Linear(self.dim, self.dim),
+            nn.ReLU(True)
+        )
 
-        # self.rel_spatial_feat = build_spatial_feature(cfg, self.dim)
+        self.rel_spatial_feat = build_spatial_feature(cfg, self.dim)
 
-        # self.rel_subj_predictor = make_roi_relation_predictor(cfg, 512)
-        # self.rel_obj_predictor = make_roi_relation_predictor(cfg, 512)
+        self.rel_subj_predictor = make_roi_relation_predictor(cfg, 512)
+        self.rel_obj_predictor = make_roi_relation_predictor(cfg, 512)
         self.rel_pred_predictor = make_roi_relation_predictor(cfg, 512)
 
-        # self.rel_spt_predictor = nn.Linear(64, num_classes)
+        self.rel_spt_predictor = nn.Linear(64, num_classes)
 
 
         self.freq_dist = torch.from_numpy(np.load("freq_prior.npy"))
@@ -91,25 +91,24 @@ class RelDN(nn.Module):
         # x_obj = self.avgpool(self.obj_feature_extractor(features, proposals))
         x_pred = self.avgpool(self.pred_feature_extractor(features, proposal_pairs))
         x_obj = x_obj.view(x_obj.size(0), -1); x_pred = x_pred.view(x_pred.size(0), -1)
-        x_obj = self.obj_embedding(x_obj);
-        x_pred = self.pred_embedding(x_pred)
+        x_obj = self.obj_embedding(x_obj); x_pred = self.pred_embedding(x_pred)
 
         sub_vert = x_obj[rel_inds[:, 0]]  #
         obj_vert = x_obj[rel_inds[:, 1]]
 
         '''compute visual scores'''
-        # rel_subj_class_logits = self.rel_subj_predictor(sub_vert.unsqueeze(2).unsqueeze(3))
-        # rel_obj_class_logits = self.rel_obj_predictor(obj_vert.unsqueeze(2).unsqueeze(3))
+        rel_subj_class_logits = self.rel_subj_predictor(sub_vert.unsqueeze(2).unsqueeze(3))
+        rel_obj_class_logits = self.rel_obj_predictor(obj_vert.unsqueeze(2).unsqueeze(3))
 
-        x_rel = x_pred + sub_vert + obj_vert # torch.cat([sub_vert, obj_vert, x_pred], 1)
-        # x_rel = self.rel_embedding(x_rel)
+        x_rel = torch.cat([sub_vert, obj_vert, x_pred], 1)
+        x_rel = self.rel_embedding(x_rel)
         rel_pred_class_logits = self.rel_pred_predictor(x_rel.unsqueeze(2).unsqueeze(3))
-        # rel_vis_class_logits = rel_pred_class_logits + rel_subj_class_logits + rel_obj_class_logits
-        rel_vis_class_logits = rel_pred_class_logits # + rel_subj_class_logits + rel_obj_class_logits
+        rel_vis_class_logits = rel_pred_class_logits + rel_subj_class_logits + rel_obj_class_logits
+        # rel_vis_class_logits = rel_pred_class_logits # + rel_subj_class_logits + rel_obj_class_logits
 
         '''compute spatial scores'''
-        # edge_spt_feats = self.rel_spatial_feat(proposal_pairs)
-        # rel_spt_class_logits = self.rel_spt_predictor(edge_spt_feats)
+        edge_spt_feats = self.rel_spatial_feat(proposal_pairs)
+        rel_spt_class_logits = self.rel_spt_predictor(edge_spt_feats)
 
         '''compute semantic scores'''
         rel_sem_class_logits = []
@@ -129,7 +128,7 @@ class RelDN(nn.Module):
             rel_sem_class_logits.append(class_logits_per_image)
         rel_sem_class_logits = torch.cat(rel_sem_class_logits, 0)
 
-        rel_class_logits = rel_vis_class_logits + rel_sem_class_logits # + rel_spt_class_logits #
+        rel_class_logits = rel_vis_class_logits + rel_sem_class_logits + rel_spt_class_logits #
         return (x_obj, x_pred), obj_class_logits, rel_class_logits
 
 def build_reldn_model(cfg, in_channels):

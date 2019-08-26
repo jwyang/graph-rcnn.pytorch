@@ -14,7 +14,7 @@ class Baseline(nn.Module):
         super(Baseline, self).__init__()
         self.cfg = cfg
         self.pred_feature_extractor = make_roi_relation_feature_extractor(cfg, in_channels)
-        self.predictor = make_roi_relation_predictor(cfg, self.feature_extractor.out_channels)
+        self.predictor = make_roi_relation_predictor(cfg, self.pred_feature_extractor.out_channels)
 
     def forward(self, features, proposals, proposal_pairs):
         obj_class_logits = None # no need to predict object class again

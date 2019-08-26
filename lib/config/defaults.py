@@ -37,8 +37,8 @@ _C.INPUT.VERTICAL_FLIP_PROB_TRAIN = 0.0
 """"======================================="""
 _C.MODEL = CN()
 _C.MODEL.ALGORITHM = "sg_baseline"
+_C.MODEL.USE_RELPN = False
 _C.MODEL.USE_FREQ_PRIOR = False
-
 _C.MODEL.RPN_ONLY = False
 _C.MODEL.MASK_ON = False
 _C.MODEL.RETINANET_ON = False

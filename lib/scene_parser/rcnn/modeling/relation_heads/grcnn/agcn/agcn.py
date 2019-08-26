@@ -55,11 +55,11 @@ class _GraphConvolutionLayer_Collect(nn.Module):
     def __init__(self, dim_obj, dim_rel):
         super(_GraphConvolutionLayer_Collect, self).__init__()
         self.collect_units = nn.ModuleList()
-        # self.collect_units.append(_Collection_Unit(dim_obj, dim_obj)) # obj from obj
         self.collect_units.append(_Collection_Unit(dim_rel, dim_obj)) # obj (subject) from rel
         self.collect_units.append(_Collection_Unit(dim_rel, dim_obj)) # obj (object) from rel
         self.collect_units.append(_Collection_Unit(dim_obj, dim_rel)) # rel from obj (subject)
         self.collect_units.append(_Collection_Unit(dim_obj, dim_rel)) # rel from obj (object)
+        self.collect_units.append(_Collection_Unit(dim_obj, dim_obj)) # obj from obj
 
     def forward(self, target, source, attention, unit_id):
         collection = self.collect_units[unit_id](target, source, attention)

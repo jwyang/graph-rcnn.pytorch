@@ -4,12 +4,10 @@
 import numpy as np
 import torch
 from torch import nn
-
-# from .roi_relation_feature_extractors import make_roi_relation_feature_extractor
-# from .roi_relation_predictors import make_roi_relation_predictor
+from lib.scene_parser.rcnn.structures.bounding_box_pair import BoxPairList
 from .inference import make_roi_relation_post_processor
 from .loss import make_roi_relation_loss_evaluator
-from lib.scene_parser.rcnn.structures.bounding_box_pair import BoxPairList
+from .relpn.relpn import make_relation_proposal_network
 
 from .baseline.baseline import build_baseline_model
 from .imp.imp import build_imp_model
@@ -39,6 +37,9 @@ class ROIRelationHead(torch.nn.Module):
 
         self.post_processor = make_roi_relation_post_processor(cfg)
         self.loss_evaluator = make_roi_relation_loss_evaluator(cfg)
+
+        if self.cfg.MODEL.USE_RELPN:
+            self.relpn = make_relation_proposal_network(cfg)
 
         self.freq_dist = None
         if self.cfg.MODEL.USE_FREQ_PRIOR:
@@ -85,11 +86,16 @@ class ROIRelationHead(torch.nn.Module):
         if self.training:
             # Faster R-CNN subsamples during training the proposals with a fixed
             # positive / negative ratio
-            with torch.no_grad():
-                proposal_pairs = self.loss_evaluator.subsample(proposals, targets)
+            if self.cfg.MODEL.USE_RELPN:
+                proposal_pairs = self.relpn(proposals, targets)
+            else:
+                with torch.no_grad():
+                    proposal_pairs = self.loss_evaluator.subsample(proposals, targets)
         else:
-            # proposals = [proposal[:32] for proposal in proposals]
-            proposal_pairs = self._get_proposal_pairs(proposals)
+            if self.cfg.MODEL.USE_RELPN:
+                proposal_pairs = self.relpn(proposals, targets)
+            else:
+                proposal_pairs = self._get_proposal_pairs(proposals)
 
         if self.cfg.MODEL.USE_FREQ_PRIOR:
             """
