@@ -63,7 +63,7 @@ def do_sg_evaluation(dataset, predictions, predictions_pred, output_folder, logg
                     top_Ns, result_dict, mode)
 
         evaluator[mode].print_stats(logger)
-        logger.info('=====================' + mode + '(IMP)' + '=========================')        
+        logger.info('=====================' + mode + '(IMP)' + '=========================')
         logger.info("{}-recall@20: {}".format(mode, np.mean(np.array(result_dict[mode + '_recall'][20]))))
         logger.info("{}-recall@50: {}".format(mode, np.mean(np.array(result_dict[mode + '_recall'][50]))))
         logger.info("{}-recall@100: {}".format(mode, np.mean(np.array(result_dict[mode + '_recall'][100]))))

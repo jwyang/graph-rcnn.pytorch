@@ -69,6 +69,32 @@ class SceneParser(GeneralizedRCNN):
             self.rel_heads.eval()
         self.training = False
 
+    def _post_processing(self, result):
+        """
+        Arguments:
+            result: (object_predictions, predicate_predictions)
+
+        Returns:
+            sort the object-predicate triplets
+        """
+        result_obj, result_pred = result
+        result_obj_new, result_pred_new = [], []
+        assert len(result_obj) == len(result_pred), "object list must have equal number to predicate list"
+        for result_obj_i, result_pred_i in zip(result_obj, result_pred):
+            obj_scores = result_obj_i.get_field("scores")
+            rel_inds = result_pred_i.get_field("idx_pairs")
+            pred_scores = result_pred_i.get_field("scores")
+            scores = torch.stack((
+                obj_scores[rel_inds[:,0]],
+                obj_scores[rel_inds[:,1]],
+                pred_scores.max(1)[0]
+            ), 1).prod(1)
+            scores_sorted, order = scores.sort(0, descending=True)
+            result_pred_i = result_pred_i[order[:self.cfg.MODEL.ROI_RELATION_HEAD.TRIPLETS_PER_IMG]]
+            result_obj_new.append(result_obj_i)
+            result_pred_new.append(result_pred_i)
+        return (result_obj_new, result_pred_new)
+
     def forward(self, images, targets=None):
         """
         Arguments:
@@ -109,7 +135,8 @@ class SceneParser(GeneralizedRCNN):
 
                 x = (x, x_pairs)
                 result = (detections, detection_pairs)
-
+                # NOTE: if object scores are updated in rel_heads, we need to ensure detections are updated accordingly
+                result = self._post_processing(result)
         else:
             # RPN-only models don't have roi_heads
             x = features
