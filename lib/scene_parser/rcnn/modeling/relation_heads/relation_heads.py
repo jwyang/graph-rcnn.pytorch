@@ -145,18 +145,14 @@ class ROIRelationHead(torch.nn.Module):
         else:
             # extract features that will be fed to the final classifier. The
             # feature_extractor generally corresponds to the pooler + heads
-            x, obj_class_logits, pred_class_logits, rel_inds = self.rel_predictor(features, proposals, proposal_pairs)
+            x, obj_class_logits, pred_class_logits, obj_class_labels, rel_inds = \
+                self.rel_predictor(features, proposals, proposal_pairs)
 
             if self.use_bias:
-                if not obj_class_logits:
-                    logits = torch.cat([proposal.get_field("logits") for proposal in proposals], 0)
-                    obj_labels = logits[:, 1:].max(1)[1] + 1
-                else:
-                    obj_labels = obj_class_logits[:, 1:].max(1)[1] + 1
                 pred_class_logits = pred_class_logits + self.freq_bias.index_with_labels(
                     torch.stack((
-                        obj_labels[rel_inds[:, 0]],
-                        obj_labels[rel_inds[:, 1]],
+                        obj_class_labels[rel_inds[:, 0]],
+                        obj_class_labels[rel_inds[:, 1]],
                     ), 1))
 
         if not self.training:

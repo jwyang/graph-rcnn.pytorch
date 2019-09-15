@@ -123,7 +123,16 @@ class GRCNN(nn.Module):
             source2rel_all = (source_obj_sub + source_obj_obj) / 2
             pred_scores.append(self.gcn_update_score(pred_scores[t], source2rel_all, 1))
 
-        return (x_pred), obj_scores[-1], pred_scores[-1], rel_inds
+        obj_class_logits = obj_scores[-1]
+        pred_class_logits = pred_scores[-1]
+
+        if not obj_class_logits:
+            logits = torch.cat([proposal.get_field("logits") for proposal in proposals], 0)
+            obj_class_labels = logits[:, 1:].max(1)[1] + 1
+        else:
+            obj_class_labels = obj_class_logits[:, 1:].max(1)[1] + 1
+
+        return (x_pred), obj_class_logits, pred_class_logits, obj_class_labels, rel_inds
 
 def build_grcnn_model(cfg, in_channels):
     return GRCNN(cfg, in_channels)

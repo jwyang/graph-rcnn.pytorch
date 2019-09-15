@@ -107,7 +107,13 @@ class IMP(nn.Module):
         obj_class_logits = self.obj_predictor(hx_obj[-1].unsqueeze(2).unsqueeze(3))
         pred_class_logits = self.pred_predictor(hx_edge[-1].unsqueeze(2).unsqueeze(3))
 
-        return (hx_obj[-1], hx_edge[-1]), obj_class_logits, pred_class_logits, rel_inds
+        if not obj_class_logits:
+            logits = torch.cat([proposal.get_field("logits") for proposal in proposals], 0)
+            obj_class_labels = logits[:, 1:].max(1)[1] + 1
+        else:
+            obj_class_labels = obj_class_logits[:, 1:].max(1)[1] + 1
+
+        return (hx_obj[-1], hx_edge[-1]), obj_class_logits, pred_class_logits, obj_class_labels, rel_inds
 
 def build_imp_model(cfg, in_channels):
     return IMP(cfg, in_channels)

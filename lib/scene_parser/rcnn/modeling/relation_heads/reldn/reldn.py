@@ -128,9 +128,15 @@ class RelDN(nn.Module):
             # class_logits_per_image = class_logits_per_image[non_duplicate_idx]
             rel_sem_class_logits.append(class_logits_per_image)
         rel_sem_class_logits = torch.cat(rel_sem_class_logits, 0)
-
         rel_class_logits = rel_vis_class_logits + rel_sem_class_logits + rel_spt_class_logits #
-        return (x_obj, x_pred), obj_class_logits, rel_class_logits, rel_inds
+
+        if not obj_class_logits:
+            logits = torch.cat([proposal.get_field("logits") for proposal in proposals], 0)
+            obj_class_labels = logits[:, 1:].max(1)[1] + 1
+        else:
+            obj_class_labels = obj_class_logits[:, 1:].max(1)[1] + 1
+
+        return (x_obj, x_pred), obj_class_logits, rel_class_logits, obj_class_labels, rel_inds
 
 def build_reldn_model(cfg, in_channels):
     return RelDN(cfg, in_channels)

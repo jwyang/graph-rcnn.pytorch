@@ -25,7 +25,14 @@ class Baseline(nn.Module):
             with torch.no_grad():
                 x, rel_inds = self.pred_feature_extractor(features, proposals, proposal_pairs)
                 rel_class_logits = self.predictor(x)
-        return x, obj_class_logits, rel_class_logits, rel_inds
+
+        if not obj_class_logits:
+            logits = torch.cat([proposal.get_field("logits") for proposal in proposals], 0)
+            obj_class_labels = logits[:, 1:].max(1)[1] + 1
+        else:
+            obj_class_labels = obj_class_logits[:, 1:].max(1)[1] + 1
+            
+        return x, obj_class_logits, rel_class_logits, obj_class_labels, rel_inds
 
 def build_baseline_model(cfg, in_channels):
     return Baseline(cfg, in_channels)
