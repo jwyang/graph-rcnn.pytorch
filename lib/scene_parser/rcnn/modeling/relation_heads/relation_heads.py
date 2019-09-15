@@ -45,9 +45,24 @@ class ROIRelationHead(torch.nn.Module):
             self.relpn = make_relation_proposal_network(cfg)
 
         self.freq_dist = None
-        if self.cfg.MODEL.USE_FREQ_PRIOR:
-            self.freq_dist = torch.from_numpy(np.load("freq_prior.npy"))
-            self.freq_dist[:, :, 0] = 0
+
+        if self.cfg.MODEL.USE_FREQ_PRIOR or self.cfg.MODEL.ROI_RELATION_HEAD.USE_BIAS:
+            # print("Using frequency bias: ", cfg.MODEL.FREQ_PRIOR)
+            # self.freq_dist_file = op.join(cfg.DATA_DIR, cfg.MODEL.FREQ_PRIOR)
+            self.freq_dist_file = "freq_prior.npy"
+            self.freq_dist = np.load(self.freq_dist_file)
+            if self.cfg.MODEL.USE_FREQ_PRIOR:
+                # never predict __no_relation__ for frequency prior
+                self.freq_dist[:, :, 0] = 0
+                # we use probability directly
+                self.freq_bias = FrequencyBias(self.freq_dist)
+            else:
+                self.freq_dist = np.log(self.freq_dist + 1e-3)
+                self.freq_bias = FrequencyBias(self.freq_dist)
+
+        # if self.cfg.MODEL.USE_FREQ_PRIOR:
+        #     self.freq_dist = torch.from_numpy(np.load("freq_prior.npy"))
+        #     self.freq_dist[:, :, 0] = 0
 
     def _get_proposal_pairs(self, proposals):
         proposal_pairs = []
@@ -64,11 +79,12 @@ class ROIRelationHead(torch.nn.Module):
             proposal_idx_pairs = torch.cat((idx_subj.view(-1, 1), idx_obj.view(-1, 1)), 1)
 
             keep_idx = (proposal_idx_pairs[:, 0] != proposal_idx_pairs[:, 1]).nonzero().view(-1)
+
             # if we filter non overlap bounding boxes
             if self.cfg.MODEL.ROI_RELATION_HEAD.FILTER_NON_OVERLAP:
-                ious = boxlist_iou(proposals_per_image, proposals_per_image)[:]
+                ious = boxlist_iou(proposals_per_image, proposals_per_image).view(-1)
                 ious = ious[keep_idx]
-                keep_idx = (ious > 0).nonzero().view(-1)
+                keep_idx = keep_idx[(ious > 0).nonzero().view(-1)]
             proposal_idx_pairs = proposal_idx_pairs[keep_idx]
             proposal_box_pairs = proposal_box_pairs[keep_idx]
             proposal_pairs_per_image = BoxPairList(proposal_box_pairs, proposals_per_image.size, proposals_per_image.mode)
