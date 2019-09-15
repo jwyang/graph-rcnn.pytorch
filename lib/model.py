@@ -126,7 +126,6 @@ class SceneGraphGeneration:
             data_time = time.time() - end
             self.arguments["iteration"] = i
             self.sp_scheduler.step()
-            import pdb; pdb.set_trace()
             imgs, targets, _ = data
             imgs = imgs.to(self.device); targets = [target.to(self.device) for target in targets]
             loss_dict = self.scene_parser(imgs, targets)

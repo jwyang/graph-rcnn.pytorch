@@ -45,7 +45,7 @@ class ROIRelationHead(torch.nn.Module):
             self.relpn = make_relation_proposal_network(cfg)
 
         self.freq_dist = None
-
+        self.use_bias = self.cfg.MODEL.ROI_RELATION_HEAD.USE_BIAS
         if self.cfg.MODEL.USE_FREQ_PRIOR or self.cfg.MODEL.ROI_RELATION_HEAD.USE_BIAS:
             # print("Using frequency bias: ", cfg.MODEL.FREQ_PRIOR)
             # self.freq_dist_file = op.join(cfg.DATA_DIR, cfg.MODEL.FREQ_PRIOR)
@@ -147,24 +147,41 @@ class ROIRelationHead(torch.nn.Module):
             # feature_extractor generally corresponds to the pooler + heads
             x, obj_class_logits, pred_class_logits, rel_inds = self.rel_predictor(features, proposals, proposal_pairs)
 
+            if self.use_bias:
+                if not obj_class_logits:
+                    logits = torch.cat([proposal.get_field("logits") for proposal in proposals], 0)
+                    obj_labels = logits[:, 1:].max(1)[1] + 1
+                else:
+                    obj_labels = obj_class_logits[:, 1:].max(1)[1] + 1
+                pred_class_logits = pred_class_logits + self.freq_bias.index_with_labels(
+                    torch.stack((
+                        obj_labels[rel_inds[:, 0]],
+                        obj_labels[rel_inds[:, 1]],
+                    ), 1))
+
         if not self.training:
+            # NOTE: if we have updated object class logits, then we need to update proposals as well!!!
+            if obj_class_logits:
+                boxes_per_image = [len(proposal) for proposal in proposals]
+                obj_logits = obj_class_logits
+                obj_scores, obj_labels = obj_class_logits[:, 1:].max(1)
+                obj_labels = obj_labels + 1
+                obj_logits = obj_logits.split(boxes_per_image, dim=0)
+                obj_scores = obj_scores.split(boxes_per_image, dim=0)
+                obj_labels = obj_labels.split(boxes_per_image, dim=0)
+                for proposal, obj_logit, obj_score, obj_label in \
+                    zip(proposals, obj_logits, obj_scores, obj_labels):
+                    proposal.add_field("logits", obj_logit)
+                    proposal.add_field("scores", obj_score)
+                    proposal.add_field("labels", obj_label)
             result = self.post_processor((pred_class_logits), proposal_pairs, use_freq_prior=self.cfg.MODEL.USE_FREQ_PRIOR)
-            # boxes_per_image = [len(proposal) for proposal in proposals]
-            # obj_labels = obj_class_logits[:, 1:].max(1)[1] + 1
-            # obj_labels = obj_labels.split(boxes_per_image, dim=0)
-            # for proposal, obj_label in zip(proposals, obj_labels):
-            #     proposal.add_field("labels", obj_label)
             return x, result, {}
 
-        if self.cfg.MODEL.ALGORITHM in ["sg_baseline", "sg_reldn"]:
-            loss_obj_classifier = 0
-        else:
-            if self.rel_predictor.update_step > 0:
-                loss_obj_classifier = self.loss_evaluator.obj_classification_loss(proposals, [obj_class_logits])
-            else:
-                loss_obj_classifier = 0
-
+        loss_obj_classifier = 0
+        if obj_class_logits:
+            loss_obj_classifier = self.loss_evaluator.obj_classification_loss(proposals, [obj_class_logits])
         loss_pred_classifier = self.loss_evaluator([pred_class_logits])
+
         return (
             x,
             proposal_pairs,

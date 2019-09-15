@@ -25,7 +25,7 @@ class Baseline(nn.Module):
             with torch.no_grad():
                 x, rel_inds = self.pred_feature_extractor(features, proposals, proposal_pairs)
                 rel_class_logits = self.predictor(x)
-        return x, obj_class_logits, rel_class_logits
+        return x, obj_class_logits, rel_class_logits, rel_inds
 
 def build_baseline_model(cfg, in_channels):
     return Baseline(cfg, in_channels)

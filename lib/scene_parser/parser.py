@@ -75,7 +75,7 @@ class SceneParser(GeneralizedRCNN):
             result: (object_predictions, predicate_predictions)
 
         Returns:
-            sort the object-predicate triplets
+            sort the object-predicate triplets, and output the top
         """
         result_obj, result_pred = result
         result_obj_new, result_pred_new = [], []
@@ -135,8 +135,6 @@ class SceneParser(GeneralizedRCNN):
 
                 x = (x, x_pairs)
                 result = (detections, detection_pairs)
-                # NOTE: if object scores are updated in rel_heads, we need to ensure detections are updated accordingly
-                result = self._post_processing(result)
         else:
             # RPN-only models don't have roi_heads
             x = features
@@ -149,6 +147,8 @@ class SceneParser(GeneralizedRCNN):
             losses.update(proposal_losses)
             return losses
 
+        # NOTE: if object scores are updated in rel_heads, we need to ensure detections are updated accordingly
+        result = self._post_processing(result)
         return result
 
 def get_save_dir(cfg):
