@@ -89,7 +89,8 @@ class RelDN(nn.Module):
         x_obj = torch.cat([proposal.get_field("features").detach() for proposal in proposals], 0)
         # features = [feature.detach() for feature in features]
         # x_obj = self.avgpool(self.obj_feature_extractor(features, proposals))
-        x_pred = self.avgpool(self.pred_feature_extractor(features, proposal_pairs))
+        x_pred, rel_inds = self.pred_feature_extractor(features, proposal_pairs)
+        x_pred = self.avgpool(x_pred)
         x_obj = x_obj.view(x_obj.size(0), -1); x_pred = x_pred.view(x_pred.size(0), -1)
         x_obj = self.obj_embedding(x_obj); x_pred = self.pred_embedding(x_pred)
 
@@ -129,7 +130,7 @@ class RelDN(nn.Module):
         rel_sem_class_logits = torch.cat(rel_sem_class_logits, 0)
 
         rel_class_logits = rel_vis_class_logits + rel_sem_class_logits + rel_spt_class_logits #
-        return (x_obj, x_pred), obj_class_logits, rel_class_logits
+        return (x_obj, x_pred), obj_class_logits, rel_class_logits, rel_inds
 
 def build_reldn_model(cfg, in_channels):
     return RelDN(cfg, in_channels)

@@ -8,7 +8,7 @@ from lib.scene_parser.rcnn.modeling.backbone import resnet
 from lib.scene_parser.rcnn.modeling.poolers import Pooler
 from lib.scene_parser.rcnn.modeling.make_layers import group_norm
 from lib.scene_parser.rcnn.modeling.make_layers import make_fc
-
+from .sparse_targets import _get_tensor_from_boxlist, _get_rel_inds
 
 @registry.ROI_RELATION_FEATURE_EXTRACTORS.register("ResNet50Conv5ROIRelationFeatureExtractor")
 class ResNet50Conv5ROIFeatureExtractor(nn.Module):
@@ -40,17 +40,26 @@ class ResNet50Conv5ROIFeatureExtractor(nn.Module):
         self.head = head
         self.out_channels = head.out_channels
 
-    def forward(self, x, proposal_pairs):
-        # proposals_subj = [proposal_pair.copy_with_subject() for proposal_pair in proposal_pairs]
-        # proposals_obj = [proposal_pair.copy_with_object() for proposal_pair in proposal_pairs]
-        # print(proposal_pairs[0].bbox)
+    def _union_box_feats(self, x, proposal_pairs):
         proposals_union = [proposal_pair.copy_with_union() for proposal_pair in proposal_pairs]
-        # print(proposals_union[0].bbox)
-        # x_subj = self.pooler(x, proposals_subj)
-        # x_obj = self.pooler(x, proposals_obj)
         x_union = self.pooler(x, proposals_union)
         x = self.head(x_union)
         return x
+
+    def forward(self, x, proposals, proposal_pairs):
+
+        # acquire tensor format per batch data
+        # bboxes, cls_prob (N, k)
+        # im_inds: (N,1), img ind for each roi in the batch
+        obj_box_priors, obj_labels, im_inds \
+            = _get_tensor_from_boxlist(proposals, 'labels')
+        # get index in the proposal pairs
+        _, proposal_idx_pairs, im_inds_pairs = _get_tensor_from_boxlist(
+            proposal_pairs, 'idx_pairs')
+
+        rel_inds = _get_rel_inds(im_inds, im_inds_pairs, proposal_idx_pairs)
+        x = self._union_box_feats(x, proposal_pairs)
+        return x, rel_inds
 
 
 @registry.ROI_RELATION_FEATURE_EXTRACTORS.register("FPN2MLPRelationFeatureExtractor")

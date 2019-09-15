@@ -69,7 +69,8 @@ class IMP(nn.Module):
         rel_inds, subj_pred_map, obj_pred_map = self._get_map_idxs(proposals, proposal_pairs)
         x_obj = torch.cat([proposal.get_field("features") for proposal in proposals], 0)
         # x_obj = self.avgpool(self.obj_feature_extractor(features, proposals))
-        x_pred = self.avgpool(self.pred_feature_extractor(features, proposal_pairs))
+        x_pred, rel_inds = self.pred_feature_extractor(features, proposal_pairs)
+        x_pred = self.avgpool(x_pred)
         x_obj = x_obj.view(x_obj.size(0), -1); x_pred = x_pred.view(x_pred.size(0), -1)
         x_obj = self.obj_embedding(x_obj); x_pred = self.pred_embedding(x_pred)
 
@@ -106,7 +107,7 @@ class IMP(nn.Module):
         obj_class_logits = self.obj_predictor(hx_obj[-1].unsqueeze(2).unsqueeze(3))
         pred_class_logits = self.pred_predictor(hx_edge[-1].unsqueeze(2).unsqueeze(3))
 
-        return (hx_obj[-1], hx_edge[-1]), obj_class_logits, pred_class_logits
+        return (hx_obj[-1], hx_edge[-1]), obj_class_logits, pred_class_logits, rel_inds
 
 def build_imp_model(cfg, in_channels):
     return IMP(cfg, in_channels)

@@ -19,11 +19,11 @@ class Baseline(nn.Module):
     def forward(self, features, proposals, proposal_pairs):
         obj_class_logits = None # no need to predict object class again
         if self.training:
-            x = self.pred_feature_extractor(features, proposal_pairs)
+            x, rel_inds = self.pred_feature_extractor(features, proposals, proposal_pairs)
             rel_class_logits = self.predictor(x)
         else:
             with torch.no_grad():
-                x = self.pred_feature_extractor(features, proposal_pairs)
+                x, rel_inds = self.pred_feature_extractor(features, proposals, proposal_pairs)
                 rel_class_logits = self.predictor(x)
         return x, obj_class_logits, rel_class_logits
 

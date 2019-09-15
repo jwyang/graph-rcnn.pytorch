@@ -5,10 +5,13 @@ import numpy as np
 import torch
 from torch import nn
 from lib.scene_parser.rcnn.structures.bounding_box_pair import BoxPairList
+from lib.scene_parser.rcnn.structures.boxlist_ops import boxlist_iou
+
 from .inference import make_roi_relation_post_processor
 from .loss import make_roi_relation_loss_evaluator
-from .relpn.relpn import make_relation_proposal_network
+from .sparse_targets import FrequencyBias, _get_tensor_from_boxlist, _get_rel_inds
 
+from .relpn.relpn import make_relation_proposal_network
 from .baseline.baseline import build_baseline_model
 from .imp.imp import build_imp_model
 from .msdn.msdn import build_msdn_model
@@ -51,6 +54,7 @@ class ROIRelationHead(torch.nn.Module):
         for i, proposals_per_image in enumerate(proposals):
             box_subj = proposals_per_image.bbox
             box_obj = proposals_per_image.bbox
+
             box_subj = box_subj.unsqueeze(1).repeat(1, box_subj.shape[0], 1)
             box_obj = box_obj.unsqueeze(0).repeat(box_obj.shape[0], 1, 1)
             proposal_box_pairs = torch.cat((box_subj.view(-1, 4), box_obj.view(-1, 4)), 1)
@@ -59,9 +63,14 @@ class ROIRelationHead(torch.nn.Module):
             idx_obj = torch.arange(box_obj.shape[0]).view(1, -1, 1).repeat(box_subj.shape[0], 1, 1).to(proposals_per_image.bbox.device)
             proposal_idx_pairs = torch.cat((idx_subj.view(-1, 1), idx_obj.view(-1, 1)), 1)
 
-            non_duplicate_idx = (proposal_idx_pairs[:, 0] != proposal_idx_pairs[:, 1]).nonzero()
-            proposal_idx_pairs = proposal_idx_pairs[non_duplicate_idx.view(-1)]
-            proposal_box_pairs = proposal_box_pairs[non_duplicate_idx.view(-1)]
+            keep_idx = (proposal_idx_pairs[:, 0] != proposal_idx_pairs[:, 1]).nonzero().view(-1)
+            # if we filter non overlap bounding boxes
+            if self.cfg.MODEL.ROI_RELATION_HEAD.FILTER_NON_OVERLAP:
+                ious = boxlist_iou(proposals_per_image, proposals_per_image)[:]
+                ious = ious[keep_idx]
+                keep_idx = (ious > 0).nonzero().view(-1)
+            proposal_idx_pairs = proposal_idx_pairs[keep_idx]
+            proposal_box_pairs = proposal_box_pairs[keep_idx]
             proposal_pairs_per_image = BoxPairList(proposal_box_pairs, proposals_per_image.size, proposals_per_image.mode)
             proposal_pairs_per_image.add_field("idx_pairs", proposal_idx_pairs)
 
@@ -103,19 +112,24 @@ class ROIRelationHead(torch.nn.Module):
             """
             x = None
             obj_class_logits = None
-            class_logits = []
-            for proposal_per_image in proposals:
-                obj_labels = proposal_per_image.get_field("labels")
-                class_logits_per_image = self.freq_dist[obj_labels, :][:, obj_labels].view(-1, self.freq_dist.size(-1))
-                # rmeove duplicate index
-                non_duplicate_idx = (torch.eye(obj_labels.shape[0]).view(-1) == 0).nonzero().view(-1).to(class_logits_per_image.device)
-                class_logits_per_image = class_logits_per_image[non_duplicate_idx]
-                class_logits.append(class_logits_per_image)
-            pred_class_logits = torch.cat(class_logits, 0)
+            _, obj_labels, im_inds = _get_tensor_from_boxlist(proposals, 'labels')
+            _, proposal_idx_pairs, im_inds_pairs = _get_tensor_from_boxlist(proposal_pairs, 'idx_pairs')
+            rel_inds = _get_rel_inds(im_inds, im_inds_pairs, proposal_idx_pairs)
+            pred_class_logits = self.freq_bias.index_with_labels(
+                torch.stack((obj_labels[rel_inds[:, 0]],obj_labels[rel_inds[:, 1]],), 1))
+            # class_logits = []
+            # for proposal_per_image in proposals:
+            #     obj_labels = proposal_per_image.get_field("labels")
+            #     class_logits_per_image = self.freq_dist[obj_labels, :][:, obj_labels].view(-1, self.freq_dist.size(-1))
+            #     # rmeove duplicate index
+            #     non_duplicate_idx = (torch.eye(obj_labels.shape[0]).view(-1) == 0).nonzero().view(-1).to(class_logits_per_image.device)
+            #     class_logits_per_image = class_logits_per_image[non_duplicate_idx]
+            #     class_logits.append(class_logits_per_image)
+            # pred_class_logits = torch.cat(class_logits, 0)
         else:
             # extract features that will be fed to the final classifier. The
             # feature_extractor generally corresponds to the pooler + heads
-            x, obj_class_logits, pred_class_logits = self.rel_predictor(features, proposals, proposal_pairs)
+            x, obj_class_logits, pred_class_logits, rel_inds = self.rel_predictor(features, proposals, proposal_pairs)
 
         if not self.training:
             result = self.post_processor((pred_class_logits), proposal_pairs, use_freq_prior=self.cfg.MODEL.USE_FREQ_PRIOR)
@@ -140,7 +154,6 @@ class ROIRelationHead(torch.nn.Module):
             proposal_pairs,
             dict(loss_obj_classifier=loss_obj_classifier, loss_pred_classifier=loss_pred_classifier),
         )
-
 
 def build_roi_relation_head(cfg, in_channels):
     """
