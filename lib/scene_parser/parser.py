@@ -148,7 +148,7 @@ class SceneParser(GeneralizedRCNN):
             return losses
 
         # NOTE: if object scores are updated in rel_heads, we need to ensure detections are updated accordingly
-        result = self._post_processing(result)
+        # result = self._post_processing(result)
         return result
 
 def get_save_dir(cfg):

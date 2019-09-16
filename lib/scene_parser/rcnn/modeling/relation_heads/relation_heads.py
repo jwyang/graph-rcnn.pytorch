@@ -107,7 +107,6 @@ class ROIRelationHead(torch.nn.Module):
             losses (dict[Tensor]): During training, returns the losses for the
                 head. During testing, returns an empty dict.
         """
-
         if self.training:
             # Faster R-CNN subsamples during training the proposals with a fixed
             # positive / negative ratio
@@ -157,24 +156,24 @@ class ROIRelationHead(torch.nn.Module):
 
         if not self.training:
             # NOTE: if we have updated object class logits, then we need to update proposals as well!!!
-            if obj_class_logits:
-                boxes_per_image = [len(proposal) for proposal in proposals]
-                obj_logits = obj_class_logits
-                obj_scores, obj_labels = obj_class_logits[:, 1:].max(1)
-                obj_labels = obj_labels + 1
-                obj_logits = obj_logits.split(boxes_per_image, dim=0)
-                obj_scores = obj_scores.split(boxes_per_image, dim=0)
-                obj_labels = obj_labels.split(boxes_per_image, dim=0)
-                for proposal, obj_logit, obj_score, obj_label in \
-                    zip(proposals, obj_logits, obj_scores, obj_labels):
-                    proposal.add_field("logits", obj_logit)
-                    proposal.add_field("scores", obj_score)
-                    proposal.add_field("labels", obj_label)
+            # if obj_class_logits is not None:
+            #     boxes_per_image = [len(proposal) for proposal in proposals]
+            #     obj_logits = obj_class_logits
+            #     obj_scores, obj_labels = obj_class_logits[:, 1:].max(1)
+            #     obj_labels = obj_labels + 1
+            #     obj_logits = obj_logits.split(boxes_per_image, dim=0)
+            #     obj_scores = obj_scores.split(boxes_per_image, dim=0)
+            #     obj_labels = obj_labels.split(boxes_per_image, dim=0)
+            #     for proposal, obj_logit, obj_score, obj_label in \
+            #         zip(proposals, obj_logits, obj_scores, obj_labels):
+            #         proposal.add_field("logits", obj_logit)
+            #         proposal.add_field("scores", obj_score)
+            #         proposal.add_field("labels", obj_label)
             result = self.post_processor((pred_class_logits), proposal_pairs, use_freq_prior=self.cfg.MODEL.USE_FREQ_PRIOR)
             return x, result, {}
 
         loss_obj_classifier = 0
-        if obj_class_logits:
+        if obj_class_logits is not None:
             loss_obj_classifier = self.loss_evaluator.obj_classification_loss(proposals, [obj_class_logits])
         loss_pred_classifier = self.loss_evaluator([pred_class_logits])
 

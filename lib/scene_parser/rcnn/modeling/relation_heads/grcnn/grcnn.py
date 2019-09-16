@@ -74,7 +74,7 @@ class GRCNN(nn.Module):
         x_obj = torch.cat([proposal.get_field("features").detach() for proposal in proposals], 0)
         obj_class_logits = torch.cat([proposal.get_field("logits").detach() for proposal in proposals], 0)
         # x_obj = self.avgpool(self.obj_feature_extractor(features, proposals))
-        x_pred, rel_inds = self.pred_feature_extractor(features, proposal_pairs)
+        x_pred, rel_inds = self.pred_feature_extractor(features, proposals, proposal_pairs)
         x_pred = self.avgpool(x_pred)
         x_obj = x_obj.view(x_obj.size(0), -1); x_obj = self.obj_embedding(x_obj)
         x_pred = x_pred.view(x_pred.size(0), -1); x_pred = self.rel_embedding(x_pred)
@@ -126,7 +126,7 @@ class GRCNN(nn.Module):
         obj_class_logits = obj_scores[-1]
         pred_class_logits = pred_scores[-1]
 
-        if not obj_class_logits:
+        if obj_class_logits is None:
             logits = torch.cat([proposal.get_field("logits") for proposal in proposals], 0)
             obj_class_labels = logits[:, 1:].max(1)[1] + 1
         else:
