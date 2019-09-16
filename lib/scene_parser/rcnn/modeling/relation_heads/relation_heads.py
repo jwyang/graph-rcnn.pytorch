@@ -132,15 +132,6 @@ class ROIRelationHead(torch.nn.Module):
             rel_inds = _get_rel_inds(im_inds, im_inds_pairs, proposal_idx_pairs)
             pred_class_logits = self.freq_bias.index_with_labels(
                 torch.stack((obj_labels[rel_inds[:, 0]],obj_labels[rel_inds[:, 1]],), 1))
-            # class_logits = []
-            # for proposal_per_image in proposals:
-            #     obj_labels = proposal_per_image.get_field("labels")
-            #     class_logits_per_image = self.freq_dist[obj_labels, :][:, obj_labels].view(-1, self.freq_dist.size(-1))
-            #     # rmeove duplicate index
-            #     non_duplicate_idx = (torch.eye(obj_labels.shape[0]).view(-1) == 0).nonzero().view(-1).to(class_logits_per_image.device)
-            #     class_logits_per_image = class_logits_per_image[non_duplicate_idx]
-            #     class_logits.append(class_logits_per_image)
-            # pred_class_logits = torch.cat(class_logits, 0)
         else:
             # extract features that will be fed to the final classifier. The
             # feature_extractor generally corresponds to the pooler + heads
@@ -156,19 +147,19 @@ class ROIRelationHead(torch.nn.Module):
 
         if not self.training:
             # NOTE: if we have updated object class logits, then we need to update proposals as well!!!
-            # if obj_class_logits is not None:
-            #     boxes_per_image = [len(proposal) for proposal in proposals]
-            #     obj_logits = obj_class_logits
-            #     obj_scores, obj_labels = obj_class_logits[:, 1:].max(1)
-            #     obj_labels = obj_labels + 1
-            #     obj_logits = obj_logits.split(boxes_per_image, dim=0)
-            #     obj_scores = obj_scores.split(boxes_per_image, dim=0)
-            #     obj_labels = obj_labels.split(boxes_per_image, dim=0)
-            #     for proposal, obj_logit, obj_score, obj_label in \
-            #         zip(proposals, obj_logits, obj_scores, obj_labels):
-            #         proposal.add_field("logits", obj_logit)
-            #         proposal.add_field("scores", obj_score)
-            #         proposal.add_field("labels", obj_label)
+            if obj_class_logits is not None:
+                boxes_per_image = [len(proposal) for proposal in proposals]
+                obj_logits = obj_class_logits
+                obj_scores, obj_labels = obj_class_logits[:, 1:].max(1)
+                obj_labels = obj_labels + 1
+                obj_logits = obj_logits.split(boxes_per_image, dim=0)
+                obj_scores = obj_scores.split(boxes_per_image, dim=0)
+                obj_labels = obj_labels.split(boxes_per_image, dim=0)
+                for proposal, obj_logit, obj_score, obj_label in \
+                    zip(proposals, obj_logits, obj_scores, obj_labels):
+                    proposal.add_field("logits", obj_logit)
+                    proposal.add_field("scores", obj_score)
+                    proposal.add_field("labels", obj_label)
             result = self.post_processor((pred_class_logits), proposal_pairs, use_freq_prior=self.cfg.MODEL.USE_FREQ_PRIOR)
             return x, result, {}
 
