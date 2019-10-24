@@ -138,7 +138,7 @@ class PostProcessor(nn.Module):
         # if we had multi-class NMS, we could perform this directly on the boxlist
         boxes = boxlist.bbox.reshape(-1, num_classes * 4)
         scores = boxlist.get_field("scores").reshape(-1, num_classes)
-        logits = BoxList.get_field("logits").reshape(-1, num_classes)
+        logits = boxlist.get_field("logits").reshape(-1, num_classes)
         features = boxlist.get_field("features")
 
         device = scores.device
