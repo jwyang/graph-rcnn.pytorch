@@ -1,5 +1,5 @@
 # Scene Graph Generation by Iterative Message Passing
-# Reimnplemetned by Jianwei Yang (jw2yang@gatech.edu)
+# Reimplemented by Jianwei Yang (jw2yang@gatech.edu)
 
 import numpy as np
 import torch
