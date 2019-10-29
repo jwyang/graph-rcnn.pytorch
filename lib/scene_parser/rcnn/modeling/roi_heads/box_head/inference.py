@@ -89,24 +89,27 @@ class PostProcessor(nn.Module):
             boxlist = boxlist.clip_to_image(remove_empty=False)
             if not self.bbox_aug_enabled:  # If bbox aug is enabled, we will do it later
                 if not self.relation_on:
-                    boxlist = self.filter_results(boxlist, num_classes)
+                    boxlist_filtered = self.filter_results(boxlist, num_classes)
                 else:
                     # boxlist_pre = self.filter_results(boxlist, num_classes)
-                    boxlist = self.filter_results_nm(boxlist, num_classes)
+                    boxlist_filtered = self.filter_results_nm(boxlist, num_classes)
 
                     # to enforce minimum number of detections per image
                     # we will do a binary search on the confidence threshold
                     score_thresh = 0.05
-                    while len(boxlist) < self.min_detections_per_img:
+                    while len(boxlist_filtered) < self.min_detections_per_img:
                         score_thresh /= 2.0
                         print(("\nNumber of proposals {} is too small, "
                                "retrying filter_results with score thresh"
-                               " = {}").format(len(boxlist), score_thresh))
-                        boxlist = self.filter_results_nm(boxlist, num_classes, thresh=score_thresh)
-            if len(boxlist) == 0:
-                import pdb; pdb.set_trace()
+                               " = {}").format(len(boxlist_filtered), score_thresh))
+                        boxlist_filtered = self.filter_results_nm(boxlist, num_classes, thresh=score_thresh)
+            else:
+                boxlist_filtered = boxlist
 
-            results.append(boxlist)
+            if len(boxlist) == 0:
+                raise ValueError("boxlist shoud not be empty!")
+
+            results.append(boxlist_filtered)
         return results
 
     def prepare_boxlist(self, boxes, features, scores, logits, image_shape):
