@@ -9,10 +9,11 @@ import pprint
 import argparse
 import numpy as np
 import torch
+import datetime
 
 from lib.config import cfg
 from lib.model import build_model
-from lib.scene_parser.rcnn.utils.miscellaneous import mkdir, save_config
+from lib.scene_parser.rcnn.utils.miscellaneous import mkdir, save_config, get_timestamp
 from lib.scene_parser.rcnn.utils.comm import synchronize, get_rank
 from lib.scene_parser.rcnn.utils.logger import setup_logger
 
@@ -111,7 +112,8 @@ def main():
 
     if not os.path.exists("logs") and get_rank() == 0:
         os.mkdir("logs")
-    logger = setup_logger("scene_graph_generation", "logs", get_rank())
+    logger = setup_logger("scene_graph_generation", "logs", get_rank(),
+        filename="{}_{}.txt".format(args.algorithm, get_timestamp()))
     logger.info(args)
     logger.info("Loaded configuration file {}".format(args.config_file))
     output_config_path = os.path.join("logs", 'config.yml')

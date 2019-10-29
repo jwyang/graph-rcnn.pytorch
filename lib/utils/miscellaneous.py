@@ -3,8 +3,8 @@ import errno
 import json
 import logging
 import os
-# from .comm import is_main_process
 
+# from .comm import is_main_process
 
 def mkdir(path):
     try:
