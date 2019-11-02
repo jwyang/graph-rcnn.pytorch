@@ -69,7 +69,7 @@ source | backbone | model | bs | lr | lr_decay | sgdet@20 | sgdet@50 | sgdet@100
 source | backbone | model | bs | lr | lr_decay | mAP@0.5 | sgdet@20 | sgdet@50 | sgdet@100
 -------|--------|--------|:------:|:-------:|:------:|:------:|:-------:|:-------:|:-------:
 this repo | Res-101 | vanilla | 8 | 5e-3 | 20k,30k | 24.8 | 10.5 | 13.8 | 16.1
-this repo | Res-101 | imp | 8 | 5e-3 | 20k,30k | 24.2 |16.7 | 21.7 | 25.2
+[this repo](https://drive.google.com/open?id=1tAJAhrq8EP86PZJYfwsjtQ-k1RJt1p7q) | Res-101 | imp | 8 | 5e-3 | 20k,30k | 24.2 |16.7 | 21.7 | 25.2
 [motifnet](https://github.com/rowanz/neural-motifs) | VGG-16 | imp | -| - | - | - | 14.6 | 20.7 | 24.5
 <!--this repo | Res-101 | msdn | 8 | 5e-3 | 20k,30k | - | - | - | - -->
 <!--this repo | Res-101 | grcnn | 8 | 5e-3 | 20k,30k | - | - | - | - -->
