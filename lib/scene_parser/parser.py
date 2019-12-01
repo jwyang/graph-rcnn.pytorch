@@ -87,7 +87,7 @@ class SceneParser(GeneralizedRCNN):
             scores = torch.stack((
                 obj_scores[rel_inds[:,0]],
                 obj_scores[rel_inds[:,1]],
-                pred_scores.max(1)[0]
+                pred_scores[:, 1:].max(1)[0]
             ), 1).prod(1)
             scores_sorted, order = scores.sort(0, descending=True)
             result_pred_i = result_pred_i[order[:self.cfg.MODEL.ROI_RELATION_HEAD.TRIPLETS_PER_IMG]]

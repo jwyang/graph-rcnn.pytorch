@@ -18,7 +18,8 @@ class GRCNN(nn.Module):
         super(GRCNN, self).__init__()
         self.cfg = cfg
         self.dim = 1024
-        self.update_step = cfg.MODEL.ROI_RELATION_HEAD.GRCNN_FEATURE_UPDATE_STEP
+        self.feat_update_step = cfg.MODEL.ROI_RELATION_HEAD.GRCNN_FEATURE_UPDATE_STEP
+        self.score_update_step = cfg.MODEL.ROI_RELATION_HEAD.GRCNN_SCORE_UPDATE_STEP
         num_classes_obj = cfg.MODEL.ROI_BOX_HEAD.NUM_CLASSES
         num_classes_pred = cfg.MODEL.ROI_RELATION_HEAD.NUM_CLASSES
         self.avgpool = nn.AdaptiveAvgPool2d(1)
@@ -36,9 +37,11 @@ class GRCNN(nn.Module):
             nn.Linear(self.dim, self.dim),
         )
 
-        if self.update_step > 0:
+        if self.feat_update_step > 0:
             self.gcn_collect_feat = _GraphConvolutionLayer_Collect(self.dim, self.dim)
             self.gcn_update_feat = _GraphConvolutionLayer_Update(self.dim, self.dim)
+
+        if self.score_update_step > 0:
             self.gcn_collect_score = _GraphConvolutionLayer_Collect(num_classes_obj, num_classes_pred)
             self.gcn_update_score = _GraphConvolutionLayer_Update(num_classes_obj, num_classes_pred)
 
@@ -83,7 +86,7 @@ class GRCNN(nn.Module):
         obj_feats = [x_obj]
         pred_feats = [x_pred]
 
-        for t in range(self.update_step):
+        for t in range(self.feat_update_step):
             # message from other objects
             source_obj = self.gcn_collect_feat(obj_feats[t], obj_feats[t], obj_obj_map, 4)
 
@@ -106,7 +109,7 @@ class GRCNN(nn.Module):
         obj_scores = [obj_class_logits]
         pred_scores = [pred_class_logits]
 
-        for t in range(self.update_step):
+        for t in range(self.score_update_step):
             '''update object logits'''
             # message from other objects
             source_obj = self.gcn_collect_score(obj_scores[t], obj_scores[t], obj_obj_map, 4)

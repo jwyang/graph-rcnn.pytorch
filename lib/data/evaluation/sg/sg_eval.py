@@ -39,7 +39,7 @@ def do_sg_evaluation(dataset, predictions, predictions_pred, output_folder, logg
             scores = np.column_stack((
                 obj_scores[all_rels[:,0]],
                 obj_scores[all_rels[:,1]],
-                fp_pred.max(1)
+                fp_pred[:, 1:].max(1)
             )).prod(1)
             sorted_inds = np.argsort(-scores)
             sorted_inds = sorted_inds[scores[sorted_inds] > 0] #[:100]
