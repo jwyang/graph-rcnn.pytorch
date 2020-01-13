@@ -111,15 +111,14 @@ class ROIRelationHead(torch.nn.Module):
             # Faster R-CNN subsamples during training the proposals with a fixed
             # positive / negative ratio
             if self.cfg.MODEL.USE_RELPN:
-                proposal_pairs = self.relpn(proposals, targets)
+                proposal_pairs, loss_relpn = self.relpn(proposals, targets)
             else:
-                with torch.no_grad():
-                    proposal_pairs = self.loss_evaluator.subsample(proposals, targets)
+                proposal_pairs = self.loss_evaluator.subsample(proposals, targets)
         else:
             if self.cfg.MODEL.USE_RELPN:
-                proposal_pairs = self.relpn(proposals, targets)
+                proposal_pairs, _ = self.relpn(proposals)
             else:
-                proposal_pairs = self._get_proposal_pairs(proposals)
+                proposal_pairs = self.loss_evaluator.subsample(proposals)
 
         if self.cfg.MODEL.USE_FREQ_PRIOR:
             """
@@ -166,13 +165,24 @@ class ROIRelationHead(torch.nn.Module):
         loss_obj_classifier = 0
         if obj_class_logits is not None:
             loss_obj_classifier = self.loss_evaluator.obj_classification_loss(proposals, [obj_class_logits])
-        loss_pred_classifier = self.loss_evaluator([pred_class_logits])
 
-        return (
-            x,
-            proposal_pairs,
-            dict(loss_obj_classifier=loss_obj_classifier, loss_pred_classifier=loss_pred_classifier),
-        )
+        if self.cfg.MODEL.USE_RELPN:
+            loss_pred_classifier = self.relpn.pred_classification_loss([pred_class_logits])
+            return (
+                x,
+                proposal_pairs,
+                dict(loss_obj_classifier=loss_obj_classifier,
+                     loss_relpn = loss_relpn,
+                     loss_pred_classifier=loss_pred_classifier),
+            )
+        else:
+            loss_pred_classifier = self.loss_evaluator([pred_class_logits])
+            return (
+                x,
+                proposal_pairs,
+                dict(loss_obj_classifier=loss_obj_classifier,
+                     loss_pred_classifier=loss_pred_classifier),
+            )
 
 def build_roi_relation_head(cfg, in_channels):
     """

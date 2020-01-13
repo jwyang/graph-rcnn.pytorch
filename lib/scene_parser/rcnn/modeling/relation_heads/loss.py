@@ -95,7 +95,8 @@ class FastRCNNLossComputation(object):
         # GT in the image, and matched_idxs can be -2, which goes
         # out of bounds
 
-        if self.use_matched_pairs_only and (matched_idxs >= 0).sum() > self.minimal_matched_pairs:
+        if self.use_matched_pairs_only and \
+            (matched_idxs >= 0).sum() > self.minimal_matched_pairs:
             # filter all matched_idxs < 0
             proposal_pairs = proposal_pairs[matched_idxs >= 0]
             matched_idxs = matched_idxs[matched_idxs >= 0]
@@ -137,17 +138,10 @@ class FastRCNNLossComputation(object):
 
         return labels, proposal_pairs
 
-    def subsample(self, proposals, targets):
+    def _randomsample_train(self, proposals, targets):
         """
-        This method performs the positive/negative sampling, and return
-        the sampled proposals.
-        Note: this function keeps a state.
-
-        Arguments:
-            proposals (list[BoxList])
-            targets (list[BoxList])
+        perform relpn based sampling during training
         """
-
         labels, proposal_pairs = self.prepare_targets(proposals, targets)
         sampled_pos_inds, sampled_neg_inds = self.fg_bg_pair_sampler(labels)
 
@@ -172,6 +166,82 @@ class FastRCNNLossComputation(object):
 
         self._proposal_pairs = proposal_pairs
         return proposal_pairs
+
+    def _fullsample_test(self, proposals):
+        """
+        This method get all subject-object pairs, and return the proposals.
+        Note: this function keeps a state.
+
+        Arguments:
+            proposals (list[BoxList])
+        """
+        proposal_pairs = []
+        for i, proposals_per_image in enumerate(proposals):
+            box_subj = proposals_per_image.bbox
+            box_obj = proposals_per_image.bbox
+
+            box_subj = box_subj.unsqueeze(1).repeat(1, box_subj.shape[0], 1)
+            box_obj = box_obj.unsqueeze(0).repeat(box_obj.shape[0], 1, 1)
+            proposal_box_pairs = torch.cat((box_subj.view(-1, 4), box_obj.view(-1, 4)), 1)
+
+            idx_subj = torch.arange(box_subj.shape[0]).view(-1, 1, 1).repeat(1, box_obj.shape[0], 1).to(proposals_per_image.bbox.device)
+            idx_obj = torch.arange(box_obj.shape[0]).view(1, -1, 1).repeat(box_subj.shape[0], 1, 1).to(proposals_per_image.bbox.device)
+            proposal_idx_pairs = torch.cat((idx_subj.view(-1, 1), idx_obj.view(-1, 1)), 1)
+
+            keep_idx = (proposal_idx_pairs[:, 0] != proposal_idx_pairs[:, 1]).nonzero().view(-1)
+
+            # if we filter non overlap bounding boxes
+            if self.cfg.MODEL.ROI_RELATION_HEAD.FILTER_NON_OVERLAP:
+                ious = boxlist_iou(proposals_per_image, proposals_per_image).view(-1)
+                ious = ious[keep_idx]
+                keep_idx = keep_idx[(ious > 0).nonzero().view(-1)]
+            proposal_idx_pairs = proposal_idx_pairs[keep_idx]
+            proposal_box_pairs = proposal_box_pairs[keep_idx]
+            proposal_pairs_per_image = BoxPairList(proposal_box_pairs, proposals_per_image.size, proposals_per_image.mode)
+            proposal_pairs_per_image.add_field("idx_pairs", proposal_idx_pairs)
+
+            proposal_pairs.append(proposal_pairs_per_image)
+        return proposal_pairs
+
+    def subsample(self, proposals, targets=None):
+        """
+        This method performs the random positive/negative sampling, and return
+        the sampled proposals.
+        Note: this function keeps a state.
+
+        Arguments:
+            proposals (list[BoxList])
+            targets (list[BoxList])
+        """
+        if targets is not None:
+            proposal_pairs = self._randomsample_train(proposals, targets)
+        else:
+            proposal_pairs = self._fullsample_test(proposals)
+        return proposal_pairs
+        # labels, proposal_pairs = self.prepare_targets(proposals, targets)
+        # sampled_pos_inds, sampled_neg_inds = self.fg_bg_pair_sampler(labels)
+        #
+        # proposal_pairs = list(proposal_pairs)
+        # # add corresponding label and regression_targets information to the bounding boxes
+        # for labels_per_image, proposal_pairs_per_image in zip(
+        #     labels, proposal_pairs
+        # ):
+        #     proposal_pairs_per_image.add_field("labels", labels_per_image)
+        #     # proposals_per_image.add_field(
+        #     #     "regression_targets", regression_targets_per_image
+        #     # )
+        #
+        # # distributed sampled proposals, that were obtained on all feature maps
+        # # concatenated via the fg_bg_sampler, into individual feature map levels
+        # for img_idx, (pos_inds_img, neg_inds_img) in enumerate(
+        #     zip(sampled_pos_inds, sampled_neg_inds)
+        # ):
+        #     img_sampled_inds = torch.nonzero(pos_inds_img | neg_inds_img).squeeze(1)
+        #     proposal_pairs_per_image = proposal_pairs[img_idx][img_sampled_inds]
+        #     proposal_pairs[img_idx] = proposal_pairs_per_image
+        #
+        # self._proposal_pairs = proposal_pairs
+        # return proposal_pairs
 
     def __call__(self, class_logits):
         """

@@ -1,15 +1,42 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+from lib.scene_parser.rcnn.modeling.box_coder import BoxCoder
+from lib.scene_parser.rcnn.modeling.matcher import Matcher
+from lib.scene_parser.rcnn.modeling.pair_matcher import PairMatcher
+from lib.scene_parser.rcnn.structures.boxlist_ops import boxlist_iou
+from lib.scene_parser.rcnn.structures.bounding_box_pair import BoxPairList
+from lib.scene_parser.rcnn.modeling.balanced_positive_negative_pair_sampler import (
+    BalancedPositiveNegativePairSampler
+)
+from lib.scene_parser.rcnn.modeling.utils import cat
+from .relationshipness import Relationshipness
 
 class RelPN(nn.Module):
-    def __init__(self, cfg, in_dim):
+    def __init__(
+        self,
+        cfg,
+        proposal_matcher,
+        fg_bg_pair_sampler,
+        box_coder,
+        cls_agnostic_bbox_reg=False,
+        use_matched_pairs_only=False,
+        minimal_matched_pairs=0,
+    ):
         super(RelPN, self).__init__()
+        self.cfg = cfg
+        self.proposal_pair_matcher = proposal_matcher
+        self.fg_bg_pair_sampler = fg_bg_pair_sampler
+        self.box_coder = box_coder
+        self.cls_agnostic_bbox_reg = cls_agnostic_bbox_reg
+        self.use_matched_pairs_only = use_matched_pairs_only
+        self.minimal_matched_pairs = minimal_matched_pairs
+        self.relationshipness = Relationshipness(self.cfg.MODEL.ROI_BOX_HEAD.NUM_CLASSES)
 
     def match_targets_to_proposals(self, proposal, target):
         match_quality_matrix = boxlist_iou(target, proposal)
         temp = []
         target_box_pairs = []
-        # import pdb; pdb.set_trace()
         for i in range(match_quality_matrix.shape[0]):
             for j in range(match_quality_matrix.shape[0]):
                 match_i = match_quality_matrix[i].view(-1, 1)
@@ -23,8 +50,6 @@ class RelPN(nn.Module):
                 boxi = target.bbox[i]; boxj = target.bbox[j]
                 box_pair = torch.cat((boxi, boxj), 0)
                 target_box_pairs.append(box_pair)
-
-        # import pdb; pdb.set_trace()
 
         match_pair_quality_matrix = torch.stack(temp, 0).view(len(temp), -1)
         target_box_pairs = torch.stack(target_box_pairs, 0)
@@ -57,7 +82,8 @@ class RelPN(nn.Module):
         # GT in the image, and matched_idxs can be -2, which goes
         # out of bounds
 
-        if self.use_matched_pairs_only and (matched_idxs >= 0).sum() > self.minimal_matched_pairs:
+        if self.use_matched_pairs_only and \
+            (matched_idxs >= 0).sum() > self.minimal_matched_pairs:
             # filter all matched_idxs < 0
             proposal_pairs = proposal_pairs[matched_idxs >= 0]
             matched_idxs = matched_idxs[matched_idxs >= 0]
@@ -99,6 +125,90 @@ class RelPN(nn.Module):
 
         return labels, proposal_pairs
 
+
+    def _relpnsample_train(self, proposals, targets):
+        """
+        perform relpn based sampling during training
+        """
+
+        labels, proposal_pairs = self.prepare_targets(proposals, targets)
+        proposal_pairs = list(proposal_pairs)
+        # add corresponding label and regression_targets information to the bounding boxes
+        for labels_per_image, proposal_pairs_per_image in zip(
+            labels, proposal_pairs
+        ):
+            proposal_pairs_per_image.add_field("labels", labels_per_image)
+
+        sampled_pos_inds, sampled_neg_inds = self.fg_bg_pair_sampler(labels)
+
+        losses = 0
+        for img_idx, (proposals_per_image, pos_inds_img, neg_inds_img) in \
+            enumerate(zip(proposals, sampled_pos_inds, sampled_neg_inds)):
+            obj_logits = proposals_per_image.get_field('logits')
+            obj_bboxes = proposals_per_image.bbox
+            relness = self.relationshipness(obj_logits, obj_bboxes)
+            nondiag = (1 - torch.eye(obj_logits.shape[0]).to(relness.device)).view(-1)
+            relness = relness.view(-1)[nondiag.nonzero()]
+            relness_sorted, order = torch.sort(relness.view(-1), descending=True)
+            img_sampled_inds = order[:self.cfg.MODEL.ROI_RELATION_HEAD.BATCH_SIZE_PER_IMAGE].view(-1)
+            proposal_pairs_per_image = proposal_pairs[img_idx][img_sampled_inds]
+            proposal_pairs[img_idx] = proposal_pairs_per_image
+
+            img_sampled_inds = torch.nonzero(pos_inds_img | neg_inds_img).squeeze(1)
+            relness = relness[img_sampled_inds]
+            pos_labels = torch.ones(len(pos_inds_img.nonzero()))
+            neg_labels = torch.zeros(len(neg_inds_img.nonzero()))
+            rellabels = torch.cat((pos_labels, neg_labels), 0).view(-1, 1)
+            losses += F.binary_cross_entropy(relness, rellabels.to(relness.device))
+
+        # distributed sampled proposals, that were obtained on all feature maps
+        # concatenated via the fg_bg_sampler, into individual feature map levels
+        # for img_idx, (pos_inds_img, neg_inds_img) in enumerate(
+        #     zip(sampled_pos_inds, sampled_neg_inds)
+        # ):
+        #     img_sampled_inds = torch.nonzero(pos_inds_img | neg_inds_img).squeeze(1)
+        #     proposal_pairs_per_image = proposal_pairs[img_idx][img_sampled_inds]
+        #     proposal_pairs[img_idx] = proposal_pairs_per_image
+
+        self._proposal_pairs = proposal_pairs
+
+        return proposal_pairs, losses
+
+    def _relpnsample_test(self, proposals):
+        """
+        perform relpn based sampling during testing
+        """
+        labels, proposal_pairs = self.prepare_targets(proposals, targets)
+        proposal_pairs = list(proposal_pairs)
+
+        import pdb; pdb.set_trace()
+
+        losses = 0
+        for img_idx, (proposals_per_image) in \
+            enumerate(zip(proposals)):
+            obj_logits = proposals_per_image.get_field('logits')
+            obj_bboxes = proposals_per_image.bbox
+            relness = self.relationshipness(obj_logits, obj_bboxes)
+            nondiag = (1 - torch.eye(obj_logits.shape[0]).to(relness.device)).view(-1)
+            relness = relness.view(-1)[nondiag.nonzero()]
+            relness_sorted, order = torch.sort(relness, descending=True)
+            img_sampled_inds = order[:self.cfg.MODEL.ROI_RELATION_HEAD.BATCH_SIZE_PER_IMAGE].view(-1)
+            proposal_pairs_per_image = proposal_pairs[img_idx][img_sampled_inds]
+            proposal_pairs[img_idx] = proposal_pairs_per_image
+
+        # distributed sampled proposals, that were obtained on all feature maps
+        # concatenated via the fg_bg_sampler, into individual feature map levels
+        # for img_idx, (pos_inds_img, neg_inds_img) in enumerate(
+        #     zip(sampled_pos_inds, sampled_neg_inds)
+        # ):
+        #     img_sampled_inds = torch.nonzero(pos_inds_img | neg_inds_img).squeeze(1)
+        #     proposal_pairs_per_image = proposal_pairs[img_idx][img_sampled_inds]
+        #     proposal_pairs[img_idx] = proposal_pairs_per_image
+
+        self._proposal_pairs = proposal_pairs
+
+        return proposal_pairs, {}
+
     def forward(self, proposals, targets):
         """
         This method performs the positive/negative sampling, and return
@@ -109,31 +219,63 @@ class RelPN(nn.Module):
             proposals (list[BoxList])
             targets (list[BoxList])
         """
+        if self.training:
+            return self._relpnsample_train(proposals, targets)
+        else:
+            return self._relpnsample_test(proposals)
 
-        labels, proposal_pairs = self.prepare_targets(proposals, targets)
-        sampled_pos_inds, sampled_neg_inds = self.fg_bg_pair_sampler(labels)
+    def pred_classification_loss(self, class_logits):
+        """
+        Computes the loss for Faster R-CNN.
+        This requires that the subsample method has been called beforehand.
 
-        proposal_pairs = list(proposal_pairs)
-        # add corresponding label and regression_targets information to the bounding boxes
-        for labels_per_image, proposal_pairs_per_image in zip(
-            labels, proposal_pairs
-        ):
-            proposal_pairs_per_image.add_field("labels", labels_per_image)
-            # proposals_per_image.add_field(
-            #     "regression_targets", regression_targets_per_image
-            # )
+        Arguments:
+            class_logits (list[Tensor])
 
-        # distributed sampled proposals, that were obtained on all feature maps
-        # concatenated via the fg_bg_sampler, into individual feature map levels
-        for img_idx, (pos_inds_img, neg_inds_img) in enumerate(
-            zip(sampled_pos_inds, sampled_neg_inds)
-        ):
-            img_sampled_inds = torch.nonzero(pos_inds_img | neg_inds_img).squeeze(1)
-            proposal_pairs_per_image = proposal_pairs[img_idx][img_sampled_inds]
-            proposal_pairs[img_idx] = proposal_pairs_per_image
+        Returns:
+            classification_loss (Tensor)
+        """
+        class_logits = cat(class_logits, dim=0)
+        device = class_logits.device
 
-        self._proposal_pairs = proposal_pairs
-        return proposal_pairs
+        if not hasattr(self, "_proposal_pairs"):
+            raise RuntimeError("subsample needs to be called before")
+
+        proposals = self._proposal_pairs
+
+        labels = cat([proposal.get_field("labels") for proposal in proposals], dim=0)
+
+        rel_fg_cnt = len(labels.nonzero())
+        rel_bg_cnt = labels.shape[0] - rel_fg_cnt
+        ce_weights = labels.new(class_logits.size(1)).fill_(1).float()
+        ce_weights[0] = float(rel_fg_cnt) / (rel_bg_cnt + 1e-5)
+        classification_loss = F.cross_entropy(class_logits, labels, weight=ce_weights)
+
+        return classification_loss
+
 
 def make_relation_proposal_network(cfg):
-    return RelPN(cfg)
+    matcher = PairMatcher(
+        cfg.MODEL.ROI_HEADS.FG_IOU_THRESHOLD,
+        cfg.MODEL.ROI_HEADS.BG_IOU_THRESHOLD,
+        allow_low_quality_matches=False,
+    )
+
+    bbox_reg_weights = cfg.MODEL.ROI_HEADS.BBOX_REG_WEIGHTS
+    box_coder = BoxCoder(weights=bbox_reg_weights)
+
+    fg_bg_sampler = BalancedPositiveNegativePairSampler(
+        cfg.MODEL.ROI_RELATION_HEAD.BATCH_SIZE_PER_IMAGE,
+        cfg.MODEL.ROI_RELATION_HEAD.POSITIVE_FRACTION
+    )
+
+    cls_agnostic_bbox_reg = cfg.MODEL.CLS_AGNOSTIC_BBOX_REG
+
+    relpn = RelPN(
+        cfg,
+        matcher,
+        fg_bg_sampler,
+        box_coder,
+        cls_agnostic_bbox_reg
+    )
+    return relpn
