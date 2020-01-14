@@ -111,7 +111,12 @@ class SceneParser(GeneralizedRCNN):
         if self.training and targets is None:
             raise ValueError("In training mode, targets should be passed")
         images = to_image_list(images)
-        features = self.backbone(images.tensors)
+        if self.training:
+            with torch.no_grad():
+                features = self.backbone(images.tensors)
+        else:
+            features = self.backbone(images.tensors)
+
         proposals, proposal_losses = self.rpn(images, features, targets)
         scene_parser_losses = {}
         if self.roi_heads:

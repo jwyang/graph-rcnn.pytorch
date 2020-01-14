@@ -31,7 +31,7 @@ class RelPN(nn.Module):
         self.cls_agnostic_bbox_reg = cls_agnostic_bbox_reg
         self.use_matched_pairs_only = use_matched_pairs_only
         self.minimal_matched_pairs = minimal_matched_pairs
-        self.relationshipness = Relationshipness(self.cfg.MODEL.ROI_BOX_HEAD.NUM_CLASSES)
+        self.relationshipness = Relationshipness(self.cfg.MODEL.ROI_BOX_HEAD.NUM_CLASSES, pos_encoding=True)
 
     def match_targets_to_proposals(self, proposal, target):
         match_quality_matrix = boxlist_iou(target, proposal)
@@ -146,7 +146,7 @@ class RelPN(nn.Module):
             enumerate(zip(proposals, sampled_pos_inds, sampled_neg_inds)):
             obj_logits = proposals_per_image.get_field('logits')
             obj_bboxes = proposals_per_image.bbox
-            relness = self.relationshipness(obj_logits, obj_bboxes)
+            relness = self.relationshipness(obj_logits, obj_bboxes, proposals_per_image.size)
             nondiag = (1 - torch.eye(obj_logits.shape[0]).to(relness.device)).view(-1)
             relness = relness.view(-1)[nondiag.nonzero()]
             relness_sorted, order = torch.sort(relness.view(-1), descending=True)
@@ -154,12 +154,14 @@ class RelPN(nn.Module):
             proposal_pairs_per_image = proposal_pairs[img_idx][img_sampled_inds]
             proposal_pairs[img_idx] = proposal_pairs_per_image
 
-            img_sampled_inds = torch.nonzero(pos_inds_img | neg_inds_img).squeeze(1)
-            relness = relness[img_sampled_inds]
-            pos_labels = torch.ones(len(pos_inds_img.nonzero()))
-            neg_labels = torch.zeros(len(neg_inds_img.nonzero()))
-            rellabels = torch.cat((pos_labels, neg_labels), 0).view(-1, 1)
-            losses += F.binary_cross_entropy(relness, rellabels.to(relness.device))
+            # import pdb; pdb.set_trace()
+            # img_sampled_inds = torch.nonzero(pos_inds_img | neg_inds_img).squeeze(1)
+            # relness = relness[img_sampled_inds]
+            # pos_labels = torch.ones(len(pos_inds_img.nonzero()))
+            # neg_labels = torch.zeros(len(neg_inds_img.nonzero()))
+            # rellabels = torch.cat((pos_labels, neg_labels), 0).view(-1, 1)
+            # losses += F.binary_cross_entropy(relness, rellabels.to(relness.device))
+            losses += F.binary_cross_entropy(relness, (labels[img_idx] > 0).view(-1, 1).float())
 
         # distributed sampled proposals, that were obtained on all feature maps
         # concatenated via the fg_bg_sampler, into individual feature map levels
@@ -174,42 +176,70 @@ class RelPN(nn.Module):
 
         return proposal_pairs, losses
 
+    def _fullsample_test(self, proposals):
+        """
+        This method get all subject-object pairs, and return the proposals.
+        Note: this function keeps a state.
+
+        Arguments:
+            proposals (list[BoxList])
+        """
+        proposal_pairs = []
+        for i, proposals_per_image in enumerate(proposals):
+            box_subj = proposals_per_image.bbox
+            box_obj = proposals_per_image.bbox
+
+            box_subj = box_subj.unsqueeze(1).repeat(1, box_subj.shape[0], 1)
+            box_obj = box_obj.unsqueeze(0).repeat(box_obj.shape[0], 1, 1)
+            proposal_box_pairs = torch.cat((box_subj.view(-1, 4), box_obj.view(-1, 4)), 1)
+
+            idx_subj = torch.arange(box_subj.shape[0]).view(-1, 1, 1).repeat(1, box_obj.shape[0], 1).to(proposals_per_image.bbox.device)
+            idx_obj = torch.arange(box_obj.shape[0]).view(1, -1, 1).repeat(box_subj.shape[0], 1, 1).to(proposals_per_image.bbox.device)
+            proposal_idx_pairs = torch.cat((idx_subj.view(-1, 1), idx_obj.view(-1, 1)), 1)
+
+            keep_idx = (proposal_idx_pairs[:, 0] != proposal_idx_pairs[:, 1]).nonzero().view(-1)
+
+            # if we filter non overlap bounding boxes
+            if self.cfg.MODEL.ROI_RELATION_HEAD.FILTER_NON_OVERLAP:
+                ious = boxlist_iou(proposals_per_image, proposals_per_image).view(-1)
+                ious = ious[keep_idx]
+                keep_idx = keep_idx[(ious > 0).nonzero().view(-1)]
+            proposal_idx_pairs = proposal_idx_pairs[keep_idx]
+            proposal_box_pairs = proposal_box_pairs[keep_idx]
+            proposal_pairs_per_image = BoxPairList(proposal_box_pairs, proposals_per_image.size, proposals_per_image.mode)
+            proposal_pairs_per_image.add_field("idx_pairs", proposal_idx_pairs)
+
+            proposal_pairs.append(proposal_pairs_per_image)
+        return proposal_pairs
+
     def _relpnsample_test(self, proposals):
         """
         perform relpn based sampling during testing
         """
-        labels, proposal_pairs = self.prepare_targets(proposals, targets)
+        proposals[0] = proposals[0]
+        proposal_pairs = self._fullsample_test(proposals)
         proposal_pairs = list(proposal_pairs)
 
-        import pdb; pdb.set_trace()
-
-        losses = 0
-        for img_idx, (proposals_per_image) in \
-            enumerate(zip(proposals)):
+        relnesses = []
+        for img_idx, proposals_per_image in enumerate(proposals):
             obj_logits = proposals_per_image.get_field('logits')
             obj_bboxes = proposals_per_image.bbox
-            relness = self.relationshipness(obj_logits, obj_bboxes)
+            relness = self.relationshipness(obj_logits, obj_bboxes, proposals_per_image.size)
             nondiag = (1 - torch.eye(obj_logits.shape[0]).to(relness.device)).view(-1)
             relness = relness.view(-1)[nondiag.nonzero()]
-            relness_sorted, order = torch.sort(relness, descending=True)
-            img_sampled_inds = order[:self.cfg.MODEL.ROI_RELATION_HEAD.BATCH_SIZE_PER_IMAGE].view(-1)
+            relness_sorted, order = torch.sort(relness.view(-1), descending=True)
+            img_sampled_inds = order[:196].view(-1)
+            relness = relness_sorted[:196].view(-1)
             proposal_pairs_per_image = proposal_pairs[img_idx][img_sampled_inds]
             proposal_pairs[img_idx] = proposal_pairs_per_image
+            relnesses.append(relness)
 
-        # distributed sampled proposals, that were obtained on all feature maps
-        # concatenated via the fg_bg_sampler, into individual feature map levels
-        # for img_idx, (pos_inds_img, neg_inds_img) in enumerate(
-        #     zip(sampled_pos_inds, sampled_neg_inds)
-        # ):
-        #     img_sampled_inds = torch.nonzero(pos_inds_img | neg_inds_img).squeeze(1)
-        #     proposal_pairs_per_image = proposal_pairs[img_idx][img_sampled_inds]
-        #     proposal_pairs[img_idx] = proposal_pairs_per_image
-
+        # self.cfg.MODEL.ROI_RELATION_HEAD.BATCH_SIZE_PER_IMAGE
         self._proposal_pairs = proposal_pairs
 
-        return proposal_pairs, {}
+        return proposal_pairs, relnesses
 
-    def forward(self, proposals, targets):
+    def forward(self, proposals, targets=None):
         """
         This method performs the positive/negative sampling, and return
         the sampled proposals.

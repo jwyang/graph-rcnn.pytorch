@@ -115,10 +115,11 @@ class ROIRelationHead(torch.nn.Module):
             else:
                 proposal_pairs = self.loss_evaluator.subsample(proposals, targets)
         else:
-            if self.cfg.MODEL.USE_RELPN:
-                proposal_pairs, _ = self.relpn(proposals)
-            else:
-                proposal_pairs = self.loss_evaluator.subsample(proposals)
+            with torch.no_grad():
+                if self.cfg.MODEL.USE_RELPN:
+                    proposal_pairs, relnesses = self.relpn(proposals)
+                else:
+                    proposal_pairs = self.loss_evaluator.subsample(proposals)
 
         if self.cfg.MODEL.USE_FREQ_PRIOR:
             """
@@ -160,6 +161,11 @@ class ROIRelationHead(torch.nn.Module):
             #         proposal.add_field("scores", obj_score)
             #         proposal.add_field("labels", obj_label)
             result = self.post_processor((pred_class_logits), proposal_pairs, use_freq_prior=self.cfg.MODEL.USE_FREQ_PRIOR)
+
+            # if self.cfg.MODEL.USE_RELPN:
+            #     for res, relness in zip(result, relnesses):
+            #         res.add_field("scores", res.get_field("scores") * relness.view(-1, 1))
+            
             return x, result, {}
 
         loss_obj_classifier = 0
