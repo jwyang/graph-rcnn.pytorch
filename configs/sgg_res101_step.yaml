@@ -9,6 +9,7 @@ MODEL:
   RELATION_ON: True
   ALGORITHM: "sg_baseline"
   USE_FREQ_PRIOR: False
+  USE_RELPN: True
   BACKBONE:
     CONV_BODY: "R-101-C4"
     FREEZE_PARAMETER: True
