@@ -69,7 +69,7 @@ source | backbone | model | bs | lr | lr_decay | sgdet@20 | sgdet@50 | sgdet@100
 ### Scene Graph Generation (Step training)
 source | backbone | model | relpn | bs | lr | mAP@0.5 | sgdet@20 | sgdet@50 | sgdet@100
 -------|--------|--------|--------|:------:|:------:|:------:|:-------:|:-------:|:-------:
-this repo | Res-101 | vanilla | no  | 8 | 5e-3 | 24.2 | 10.5 | 13.8 | 16.1
+[this repo](https://drive.google.com/open?id=1EoAVYsvOk5narI6iIoyOBb8jXDS7Retf) | Res-101 | vanilla | no  | 8 | 5e-3 | 24.2 | 10.5 | 13.8 | 16.1
 [this repo](https://drive.google.com/open?id=1Rp-cBVHGrmX993-oD05GuOXgLjhV_TNs) | Res-101 | vanilla | yes | 8 | 5e-3 | 24.2 | 12.3 | 15.8 | 17.7
 [this repo](https://drive.google.com/open?id=1tAJAhrq8EP86PZJYfwsjtQ-k1RJt1p7q) | Res-101 | imp | no | 8 | 5e-3 | 24.2 |16.7 | 21.7 | 25.2
 [motifnet](https://github.com/rowanz/neural-motifs) | VGG-16 | imp | -| - | - | - | 14.6 | 20.7 | 24.5
