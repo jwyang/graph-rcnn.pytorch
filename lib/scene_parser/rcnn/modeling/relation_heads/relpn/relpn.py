@@ -228,13 +228,12 @@ class RelPN(nn.Module):
             nondiag = (1 - torch.eye(obj_logits.shape[0]).to(relness.device)).view(-1)
             relness = relness.view(-1)[nondiag.nonzero()]
             relness_sorted, order = torch.sort(relness.view(-1), descending=True)
-            img_sampled_inds = order[:196].view(-1)
-            relness = relness_sorted[:196].view(-1)
+            img_sampled_inds = order[:self.cfg.MODEL.ROI_RELATION_HEAD.BATCH_SIZE_PER_IMAGE].view(-1)
+            relness = relness_sorted[:self.cfg.MODEL.ROI_RELATION_HEAD.BATCH_SIZE_PER_IMAGE].view(-1)
             proposal_pairs_per_image = proposal_pairs[img_idx][img_sampled_inds]
             proposal_pairs[img_idx] = proposal_pairs_per_image
             relnesses.append(relness)
 
-        # self.cfg.MODEL.ROI_RELATION_HEAD.BATCH_SIZE_PER_IMAGE
         self._proposal_pairs = proposal_pairs
 
         return proposal_pairs, relnesses
