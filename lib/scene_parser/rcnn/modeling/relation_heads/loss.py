@@ -22,6 +22,7 @@ class FastRCNNLossComputation(object):
 
     def __init__(
         self,
+        cfg,
         proposal_matcher,
         fg_bg_pair_sampler,
         box_coder,
@@ -36,6 +37,7 @@ class FastRCNNLossComputation(object):
             box_coder (BoxCoder)
             use_matched_pairs_only: sample only among the pairs that have large iou with ground-truth pairs
         """
+        self.cfg = cfg
         self.proposal_pair_matcher = proposal_matcher
         self.fg_bg_pair_sampler = fg_bg_pair_sampler
         self.box_coder = box_coder
@@ -302,6 +304,7 @@ def make_roi_relation_loss_evaluator(cfg):
     cls_agnostic_bbox_reg = cfg.MODEL.CLS_AGNOSTIC_BBOX_REG
 
     loss_evaluator = FastRCNNLossComputation(
+        cfg,
         matcher,
         fg_bg_sampler,
         box_coder,

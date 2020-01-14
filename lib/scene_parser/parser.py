@@ -161,7 +161,8 @@ def get_save_dir(cfg):
     iter_step = max([cfg.MODEL.ROI_RELATION_HEAD.IMP_FEATURE_UPDATE_STEP, \
                      cfg.MODEL.ROI_RELATION_HEAD.MSDN_FEATURE_UPDATE_STEP, \
                      cfg.MODEL.ROI_RELATION_HEAD.GRCNN_FEATURE_UPDATE_STEP])
-    train_alg = (cfg.MODEL.ALGORITHM + '_' + train_mode + '_' + str(iter_step)) if "sg" in cfg.MODEL.ALGORITHM else cfg.MODEL.ALGORITHM
+    alg = cfg.MODEL.ALGORITHM + '_relpn' if cfg.MODEL.USE_RELPN else cfg.MODEL.ALGORITHM
+    train_alg = (alg + '_' + train_mode + '_' + str(iter_step)) if "sg" in cfg.MODEL.ALGORITHM else cfg.MODEL.ALGORITHM
     outdir = os.path.join(
         cfg.DATASET.NAME + '_' + cfg.DATASET.MODE + '_' + cfg.DATASET.LOADER,
         cfg.MODEL.BACKBONE.CONV_BODY, train_alg,
