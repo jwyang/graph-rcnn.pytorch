@@ -84,8 +84,8 @@ model | bs | lr | mAP@0.5 | sgdet@20 | sgdet@50 | sgdet@100
 --------|:------:|:------:|:------:|:-------:|:-------:|:-------:
 [vanilla](https://drive.google.com/open?id=1EoAVYsvOk5narI6iIoyOBb8jXDS7Retf) | 8 | 5e-3 | 24.2 | 10.5 | 13.8 | 16.1
 [imp](https://drive.google.com/open?id=1tAJAhrq8EP86PZJYfwsjtQ-k1RJt1p7q)| 8 | 5e-3 | 24.2 |16.7 | 21.7 | 25.2
-[msdn](https://drive.google.com/open?id=1xTl_o7D0oozDArjWl1p7g5jiH32jcdBS) | 8 | 5e-3 | 24.2 | 18.3 | 23.6 | 27.1
-[graph-rcnn](https://drive.google.com/open?id=1HSrJBK7qUxjvs-ccDlD7DKA7pW49hUcx) | 8 | 5e-3 | 24.2 | 18.8 | 23.7 | 26.2
+[msdn](https://drive.google.com/open?id=1xTl_o7D0oozDArjWl1p7g5jiH32jcdBS) | 8 | 5e-3 | 24.2 | 18.3 | 23.6 | **27.1**
+[graph-rcnn](https://drive.google.com/open?id=1HSrJBK7qUxjvs-ccDlD7DKA7pW49hUcx)(no att) | 8 | 5e-3 | 24.2 | **18.8** | **23.7** | 26.2
 
 \* you can click 'model' in above table to download the checkpoints.
 
