@@ -79,7 +79,7 @@ source | backbone | model | bs | lr | mAP@0.5 | sgdet@20 | sgdet@50 | sgdet@100
 
 The above table shows that our reimplementation of baseline and imp algorithm match the performance reported in mofitnet.
 
-### Comparisons with Other Methods
+### Comparisons with other Methods
 model | bs | lr | mAP@0.5 | sgdet@20 | sgdet@50 | sgdet@100
 --------|:------:|:------:|:------:|:-------:|:-------:|:-------:
 [vanilla](https://drive.google.com/open?id=1EoAVYsvOk5narI6iIoyOBb8jXDS7Retf) | 8 | 5e-3 | 24.2 | 10.5 | 13.8 | 16.1
@@ -89,7 +89,7 @@ msdn | 8 | 5e-3 | 24.2 | - | - | -
 
 \* you can click 'model' in above table to download the checkpoints.
 
-### Adding RelPN to Other Methods
+### Adding RelPN to other Methods
 
 We added our RelPN to various algorithms and compared with the original version.
 
