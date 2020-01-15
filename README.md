@@ -102,7 +102,9 @@ model | relpn | bs | lr | mAP@0.5 | sgdet@20 | sgdet@50 | sgdet@100
 
 \* you can click 'model' in above table to download the checkpoints. 
 
-Above, we can see consistant improvements for different algorithms, which demonstrates the effeciveness of our proposed relation proposal network (RelPN). **Also, the inference time for the models with RelPN is reduced significantly since much less object pairs (256, originally > 1k) are fed to relation head for predicate classification.**
+Above, we can see consistant improvements for different algorithms, which demonstrates the effeciveness of our proposed relation proposal network (RelPN). 
+
+**Also, since much less object pairs (256, originally > 1k) are fed to relation head for predicate classification, the inference time for the models with RelPN is reduced significantly (~2.5 times faster)**
 
 
 ## Tips and Tricks
