@@ -102,7 +102,7 @@ model | relpn | bs | lr | mAP@0.5 | sgdet@20 | sgdet@50 | sgdet@100
 [imp](https://drive.google.com/open?id=1tAJAhrq8EP86PZJYfwsjtQ-k1RJt1p7q) | no | 8 | 5e-3 | 24.2 |16.7 | 21.7 | 25.2
 [imp](https://drive.google.com/open?id=1XxQN3YRC5I8goTUO8rGVtlYdnofmSFZr) | yes | 8 | 5e-3 | 24.2 | 19.2 | 23.9 | 26.3
 [msdn](https://drive.google.com/open?id=1xTl_o7D0oozDArjWl1p7g5jiH32jcdBS) | no | 8 | 5e-3 | 24.2 | 18.3 | 23.6 | 27.1
-msdn | yes | 8 | 5e-3 | 24.2 | 19.2 | 23.8 | 26.2
+[msdn](https://drive.google.com/open?id=1ZMnyNotb-t5ty7vqX6IdQd7_S15iFIGg) | yes | 8 | 5e-3 | 24.2 | 19.2 | 23.8 | 26.2
 
 \* you can click 'model' in above table to download the checkpoints. 
 
