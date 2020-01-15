@@ -75,11 +75,13 @@ source | backbone | model | relpn | bs | lr | mAP@0.5 | sgdet@20 | sgdet@50 | sg
 <!--this repo | Res-101 | msdn | 8 | 5e-3 | 20k,30k | - | - | - | - -->
 <!--this repo | Res-101 | grcnn | 8 | 5e-3 | 20k,30k | - | - | - | - -->
 
-\* you can click 'this repo' in above table to download the checkpoints. The above table shows that our reimplementation of baseline and imp algorithm match the performance reported in mofitnet.
+\* you can click 'this repo' in above table to download the checkpoints. 
+
+The above table shows that our reimplementation of baseline and imp algorithm match the performance reported in mofitnet.
 
 ### Comparisons
 model | bs | lr | mAP@0.5 | sgdet@20 | sgdet@50 | sgdet@100
---------|--------|:------:|:------:|:------:|:-------:|:-------:|:-------:
+--------|:------:|:------:|:------:|:-------:|:-------:|:-------:
 [vanilla](https://drive.google.com/open?id=1EoAVYsvOk5narI6iIoyOBb8jXDS7Retf) | 8 | 5e-3 | 24.2 | 10.5 | 13.8 | 16.1
 [imp](https://drive.google.com/open?id=1tAJAhrq8EP86PZJYfwsjtQ-k1RJt1p7q)| 8 | 5e-3 | 24.2 |16.7 | 21.7 | 25.2
 
@@ -96,7 +98,9 @@ model | relpn | bs | lr | mAP@0.5 | sgdet@20 | sgdet@50 | sgdet@100
 [imp](https://drive.google.com/open?id=1tAJAhrq8EP86PZJYfwsjtQ-k1RJt1p7q) | no | 8 | 5e-3 | 24.2 |16.7 | 21.7 | 25.2
 imp | yes | 8 | 5e-3 | 24.2 | 19.2 | 23.9 | 26.3
 
-\* you can click 'model' in above table to download the checkpoints. In the above table, we can observe consistant improvement for different scene graph geenration algorithms, which demonstrate the effeciveness of our proposed relation proposal network (RelPN). **Also, note that the inference time for the models with RelPN is reduced significantly since much less (256) object pairs are passed to relation head for predicate classification.**
+\* you can click 'model' in above table to download the checkpoints. 
+
+Above, we can see consistant improvements for different algorithms, which demonstrates the effeciveness of our proposed relation proposal network (RelPN). **Also, the inference time for the models with RelPN is reduced significantly since much less object pairs (256, originally > 1k) are fed to relation head for predicate classification.**
 
 
 ## Tips and Tricks
