@@ -46,7 +46,7 @@ class PostProcessor(nn.Module):
         self.bbox_aug_enabled = bbox_aug_enabled
         self.relation_on = relation_on
 
-    def forward(self, x, boxes):
+    def forward(self, x, boxes, skip_nms=False):
         """
         Arguments:
             x (tuple[tensor, tensor]): x contains the class logits
@@ -67,27 +67,29 @@ class PostProcessor(nn.Module):
         features = [box.get_field("features") for box in boxes]
         concat_boxes = torch.cat([a.bbox for a in boxes], dim=0)
 
-        if self.cls_agnostic_bbox_reg:
-            box_regression = box_regression[:, -4:]
-        proposals = self.box_coder.decode(
-            box_regression.view(sum(boxes_per_image), -1), concat_boxes
-        )
-        if self.cls_agnostic_bbox_reg:
-            proposals = proposals.repeat(1, class_prob.shape[1])
+        if not skip_nms:
+            if self.cls_agnostic_bbox_reg:
+                box_regression = box_regression[:, -4:]
+            proposals = self.box_coder.decode(
+                box_regression.view(sum(boxes_per_image), -1), concat_boxes
+            )
+            if self.cls_agnostic_bbox_reg:
+                proposals = proposals.repeat(1, class_prob.shape[1])
+            proposals = proposals.split(boxes_per_image, dim=0)
+        else:
+            proposals = concat_boxes.split(boxes_per_image, dim=0)
 
         num_classes = class_prob.shape[1]
-
-        proposals = proposals.split(boxes_per_image, dim=0)
         class_prob = class_prob.split(boxes_per_image, dim=0)
         class_logit = class_logit.split(boxes_per_image, dim=0)
 
-        results = []
+        results = []; idx = 0
         for prob, logit, boxes_per_img, features_per_img, image_shape in zip(
             class_prob, class_logit, proposals, features, image_shapes
         ):
-            boxlist = self.prepare_boxlist(boxes_per_img, features_per_img, prob, logit, image_shape)
-            boxlist = boxlist.clip_to_image(remove_empty=False)
-            if not self.bbox_aug_enabled:  # If bbox aug is enabled, we will do it later
+            if not self.bbox_aug_enabled and not skip_nms:  # If bbox aug is enabled, we will do it later
+                boxlist = self.prepare_boxlist(boxes_per_img, features_per_img, prob, logit, image_shape)
+                boxlist = boxlist.clip_to_image(remove_empty=False)
                 if not self.relation_on:
                     boxlist_filtered = self.filter_results(boxlist, num_classes)
                 else:
@@ -104,7 +106,14 @@ class PostProcessor(nn.Module):
                                " = {}").format(len(boxlist_filtered), score_thresh))
                         boxlist_filtered = self.filter_results_nm(boxlist, num_classes, thresh=score_thresh)
             else:
+                boxlist = BoxList(boxes_per_img, image_shape, mode="xyxy")
+                boxlist.add_field("scores", prob[:,1:].max(1)[0])
+                boxlist.add_field("logits", logit)
+                boxlist.add_field("features", features_per_img)
+                boxlist.add_field("labels", boxes[idx].get_field("labels"))
+                boxlist.add_field("regression_targets", boxes[idx].bbox.clone().fill_(0.0))
                 boxlist_filtered = boxlist
+                idx += 1
 
             if len(boxlist) == 0:
                 raise ValueError("boxlist shoud not be empty!")
