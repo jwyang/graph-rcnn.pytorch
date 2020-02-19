@@ -67,16 +67,49 @@ source | backbone | model | bs | lr | lr_decay | sgdet@20 | sgdet@50 | sgdet@100
 <!---[this repo](https://drive.google.com/open?id=1Vb-gX3_OLhzgdNseXgS_2DiLmJ8qiG8P) | Res-101 | freq | 6 | 5e-3 | 70k,90k | 100k | 19.4 | 25.0 | 28.5-->
 
 ### Scene Graph Generation (Step training)
-source | backbone | model | relpn | bs | lr | mAP@0.5 | sgdet@20 | sgdet@50 | sgdet@100
--------|--------|--------|--------|:------:|:------:|:------:|:-------:|:-------:|:-------:
-this repo | Res-101 | vanilla | no  | 8 | 5e-3 | 24.2 | 10.5 | 13.8 | 16.1
-this repo | Res-101 | vanilla | yes | 8 | 5e-3 | 24.2 | 12.3 | 15.8 | 17.7
-[this repo](https://drive.google.com/open?id=1tAJAhrq8EP86PZJYfwsjtQ-k1RJt1p7q) | Res-101 | imp | no | 8 | 5e-3 | 24.2 |16.7 | 21.7 | 25.2
-[motifnet](https://github.com/rowanz/neural-motifs) | VGG-16 | imp | -| - | - | - | 14.6 | 20.7 | 24.5
+source | backbone | model | bs | lr | mAP@0.5 | sgdet@20 | sgdet@50 | sgdet@100
+-------|--------|--------|:------:|:------:|:------:|:-------:|:-------:|:-------:
+[this repo](https://drive.google.com/open?id=1EoAVYsvOk5narI6iIoyOBb8jXDS7Retf) | Res-101 | vanilla | 8 | 5e-3 | 24.2 | 10.5 | 13.8 | 16.1
+[this repo](https://drive.google.com/open?id=1tAJAhrq8EP86PZJYfwsjtQ-k1RJt1p7q) | Res-101 | imp | 8 | 5e-3 | 24.2 |16.7 | 21.7 | 25.2
+[motifnet](https://github.com/rowanz/neural-motifs) | VGG-16 | imp | -| - | - | 14.6 | 20.7 | 24.5
 <!--this repo | Res-101 | msdn | 8 | 5e-3 | 20k,30k | - | - | - | - -->
 <!--this repo | Res-101 | grcnn | 8 | 5e-3 | 20k,30k | - | - | - | - -->
 
-\* you can click 'this repo' in above table to download the checkpoints.
+\* you can click 'this repo' in above table to download the checkpoints. 
+
+The above table shows that our reimplementation of baseline and imp algorithm match the performance reported in mofitnet.
+
+### Comparisons with other Methods
+model | bs | lr | mAP@0.5 | sgdet@20 | sgdet@50 | sgdet@100
+--------|:------:|:------:|:------:|:-------:|:-------:|:-------:
+[vanilla](https://drive.google.com/open?id=1EoAVYsvOk5narI6iIoyOBb8jXDS7Retf) | 8 | 5e-3 | 24.2 | 10.5 | 13.8 | 16.1
+[imp](https://drive.google.com/open?id=1tAJAhrq8EP86PZJYfwsjtQ-k1RJt1p7q)| 8 | 5e-3 | 24.2 |16.7 | 21.7 | 25.2
+[msdn](https://drive.google.com/open?id=1xTl_o7D0oozDArjWl1p7g5jiH32jcdBS) | 8 | 5e-3 | 24.2 | 18.3 | 23.6 | **27.1**
+[graph-rcnn](https://drive.google.com/open?id=1HSrJBK7qUxjvs-ccDlD7DKA7pW49hUcx)(no att) | 8 | 5e-3 | 24.2 | **18.8** | **23.7** | 26.2
+
+\* you can click 'model' in above table to download the checkpoints.
+
+Accordingly, all models achieved significantly better numbers compared with those reported in the original papers. The main reason for these consistant improvements are due to the per-class NMS of object proposals before sending to relationship head. Also, we found the gap between different methods are also reduced significantly. Our model has similar performance to msdn, while better performance than imp.
+
+### Adding RelPN to other Methods
+
+We added our RelPN to various algorithms and compared with the original version.
+
+model | relpn | bs | lr | mAP@0.5 | sgdet@20 | sgdet@50 | sgdet@100
+--------|--------|:------:|:------:|:------:|:-------:|:-------:|:-------:
+[vanilla](https://drive.google.com/open?id=1EoAVYsvOk5narI6iIoyOBb8jXDS7Retf) | no  | 8 | 5e-3 | 24.2 | 10.5 | 13.8 | 16.1
+[vanilla](https://drive.google.com/open?id=1Rp-cBVHGrmX993-oD05GuOXgLjhV_TNs) | yes | 8 | 5e-3 | 24.2 | 12.3 | 15.8 | 17.7
+[imp](https://drive.google.com/open?id=1tAJAhrq8EP86PZJYfwsjtQ-k1RJt1p7q) | no | 8 | 5e-3 | 24.2 |16.7 | 21.7 | 25.2
+[imp](https://drive.google.com/open?id=1XxQN3YRC5I8goTUO8rGVtlYdnofmSFZr) | yes | 8 | 5e-3 | 24.2 | 19.2 | 23.9 | 26.3
+[msdn](https://drive.google.com/open?id=1xTl_o7D0oozDArjWl1p7g5jiH32jcdBS) | no | 8 | 5e-3 | 24.2 | 18.3 | 23.6 | 27.1
+[msdn](https://drive.google.com/open?id=1ZMnyNotb-t5ty7vqX6IdQd7_S15iFIGg) | yes | 8 | 5e-3 | 24.2 | 19.2 | 23.8 | 26.2
+
+\* you can click 'model' in above table to download the checkpoints. 
+
+Above, we can see consistant improvements for different algorithms, which demonstrates the effeciveness of our proposed relation proposal network (RelPN). 
+
+**Also, since much less object pairs (256, originally > 1k) are fed to relation head for predicate classification, the inference time for the models with RelPN is reduced significantly (~2.5 times faster)**
+
 
 ## Tips and Tricks
 
