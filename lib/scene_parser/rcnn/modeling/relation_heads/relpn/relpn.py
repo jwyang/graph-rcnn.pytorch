@@ -11,6 +11,7 @@ from lib.scene_parser.rcnn.modeling.balanced_positive_negative_pair_sampler impo
 )
 from lib.scene_parser.rcnn.modeling.utils import cat
 from .relationshipness import Relationshipness
+from .relationshipness import Relationshipnessv2
 
 class RelPN(nn.Module):
     def __init__(
@@ -43,9 +44,9 @@ class RelPN(nn.Module):
                 match_j = match_quality_matrix[j].view(1, -1)
                 match_ij = ((match_i + match_j) / 2)
                 # rmeove duplicate index
-                non_duplicate_idx = (torch.eye(match_ij.shape[0]).view(-1) == 0).nonzero().view(-1).to(match_ij.device)
                 match_ij = match_ij.view(-1) # [::match_quality_matrix.shape[1]] = 0
-                match_ij = match_ij[non_duplicate_idx]
+                # non_duplicate_idx = (torch.eye(match_ij.shape[0]).view(-1) == 0).nonzero().view(-1).to(match_ij.device)
+                # match_ij = match_ij[non_duplicate_idx]
                 temp.append(match_ij)
                 boxi = target.bbox[i]; boxj = target.bbox[j]
                 box_pair = torch.cat((boxi, boxj), 0)
@@ -66,9 +67,10 @@ class RelPN(nn.Module):
         idx_obj = torch.arange(box_obj.shape[0]).view(1, -1, 1).repeat(box_subj.shape[0], 1, 1).to(proposal.bbox.device)
         proposal_idx_pairs = torch.cat((idx_subj.view(-1, 1), idx_obj.view(-1, 1)), 1)
 
-        non_duplicate_idx = (proposal_idx_pairs[:, 0] != proposal_idx_pairs[:, 1]).nonzero()
-        proposal_box_pairs = proposal_box_pairs[non_duplicate_idx.view(-1)]
-        proposal_idx_pairs = proposal_idx_pairs[non_duplicate_idx.view(-1)]
+        # non_duplicate_idx = (proposal_idx_pairs[:, 0] != proposal_idx_pairs[:, 1]).nonzero()
+        # proposal_box_pairs = proposal_box_pairs[non_duplicate_idx.view(-1)]
+        # proposal_idx_pairs = proposal_idx_pairs[non_duplicate_idx.view(-1)]
+
         proposal_pairs = BoxPairList(proposal_box_pairs, proposal.size, proposal.mode)
         proposal_pairs.add_field("idx_pairs", proposal_idx_pairs)
 
@@ -147,9 +149,33 @@ class RelPN(nn.Module):
             obj_logits = proposals_per_image.get_field('logits')
             obj_bboxes = proposals_per_image.bbox
             relness = self.relationshipness(obj_logits, obj_bboxes, proposals_per_image.size)
-            nondiag = (1 - torch.eye(obj_logits.shape[0]).to(relness.device)).view(-1)
-            relness = relness.view(-1)[nondiag.nonzero()]
+
+            # nondiag = (1 - torch.eye(obj_logits.shape[0]).to(relness.device)).view(-1)
+            # relness = relness.view(-1)[nondiag.nonzero()]
+
             relness_sorted, order = torch.sort(relness.view(-1), descending=True)
+
+            # ious = boxlist_iou(proposals_per_image, proposals_per_image)
+            # subj_ids = []; obj_ids = []
+            # sample_ids = []; id = 0
+            # while len(sample_ids) < self.cfg.MODEL.ROI_RELATION_HEAD.BATCH_SIZE_PER_IMAGE and id < len(order):
+            #     subj_id = order[id] / len(proposals_per_image)
+            #     obj_id = order[id] % len(proposals_per_image)
+            #
+            #     if len(subj_ids) == 0 and len(obj_ids) == 0 and subj_id != obj_id:
+            #         subj_ids.append(subj_id.item())
+            #         obj_ids.append(obj_id.item())
+            #         sample_ids.append(id)
+            #     else:
+            #         subj_ious = ious[subj_id, subj_ids]
+            #         obj_ious = ious[obj_id, obj_ids]
+            #         if (subj_ious.max() < 0.9 or obj_ious.max() < 0.9) and subj_id != obj_id:
+            #             subj_ids.append(subj_id.item())
+            #             obj_ids.append(obj_id.item())
+            #             sample_ids.append(id)
+            #     id += 1
+            # img_sampled_inds = order[sample_ids]
+
             img_sampled_inds = order[:self.cfg.MODEL.ROI_RELATION_HEAD.BATCH_SIZE_PER_IMAGE].view(-1)
             proposal_pairs_per_image = proposal_pairs[img_idx][img_sampled_inds]
             proposal_pairs[img_idx] = proposal_pairs_per_image
@@ -161,7 +187,7 @@ class RelPN(nn.Module):
             # neg_labels = torch.zeros(len(neg_inds_img.nonzero()))
             # rellabels = torch.cat((pos_labels, neg_labels), 0).view(-1, 1)
             # losses += F.binary_cross_entropy(relness, rellabels.to(relness.device))
-            losses += F.binary_cross_entropy(relness, (labels[img_idx] > 0).view(-1, 1).float())
+            losses += F.binary_cross_entropy(relness.view(-1, 1), (labels[img_idx] > 0).view(-1, 1).float())
 
         # distributed sampled proposals, that were obtained on all feature maps
         # concatenated via the fg_bg_sampler, into individual feature map levels
@@ -225,11 +251,40 @@ class RelPN(nn.Module):
             obj_logits = proposals_per_image.get_field('logits')
             obj_bboxes = proposals_per_image.bbox
             relness = self.relationshipness(obj_logits, obj_bboxes, proposals_per_image.size)
-            nondiag = (1 - torch.eye(obj_logits.shape[0]).to(relness.device)).view(-1)
-            relness = relness.view(-1)[nondiag.nonzero()]
+            keep_idx = (1 - torch.eye(obj_logits.shape[0]).to(relness.device)).view(-1).nonzero().view(-1)
+            if self.cfg.MODEL.ROI_RELATION_HEAD.FILTER_NON_OVERLAP:
+                ious = boxlist_iou(proposals_per_image, proposals_per_image).view(-1)
+                ious = ious[keep_idx]
+                keep_idx = keep_idx[(ious > 0).nonzero().view(-1)]
+            relness = relness.view(-1)[keep_idx]
             relness_sorted, order = torch.sort(relness.view(-1), descending=True)
+
+            # perform co-nms to filter duplicate bounding boxes
+            # ious = boxlist_iou(proposals_per_image, proposals_per_image)
+            # subj_ids = []; obj_ids = []
+            # sample_ids = []; id = 0
+            # while len(sample_ids) < self.cfg.MODEL.ROI_RELATION_HEAD.BATCH_SIZE_PER_IMAGE and id < len(order):
+            #     subj_id = order[id] / len(proposals_per_image)
+            #     obj_id = order[id] % len(proposals_per_image)
+            #
+            #     if len(subj_ids) == 0 and len(obj_ids) == 0 and subj_id != obj_id:
+            #         subj_ids.append(subj_id.item())
+            #         obj_ids.append(obj_id.item())
+            #         sample_ids.append(id)
+            #     else:
+            #         subj_ious = ious[subj_id, subj_ids]
+            #         obj_ious = ious[obj_id, obj_ids]
+            #         if (subj_ious.max() < 0.9 or obj_ious.max() < 0.9) and subj_id != obj_id:
+            #             subj_ids.append(subj_id.item())
+            #             obj_ids.append(obj_id.item())
+            #             sample_ids.append(id)
+            #     id += 1
+            # img_sampled_inds = order[sample_ids]
+            # relness = relness_sorted[sample_ids]
+
             img_sampled_inds = order[:self.cfg.MODEL.ROI_RELATION_HEAD.BATCH_SIZE_PER_IMAGE].view(-1)
             relness = relness_sorted[:self.cfg.MODEL.ROI_RELATION_HEAD.BATCH_SIZE_PER_IMAGE].view(-1)
+
             proposal_pairs_per_image = proposal_pairs[img_idx][img_sampled_inds]
             proposal_pairs[img_idx] = proposal_pairs_per_image
             relnesses.append(relness)
@@ -253,7 +308,7 @@ class RelPN(nn.Module):
         else:
             return self._relpnsample_test(proposals)
 
-    def pred_classification_loss(self, class_logits):
+    def pred_classification_loss(self, class_logits, freq_prior=None):
         """
         Computes the loss for Faster R-CNN.
         This requires that the subsample method has been called beforehand.
@@ -271,7 +326,6 @@ class RelPN(nn.Module):
             raise RuntimeError("subsample needs to be called before")
 
         proposals = self._proposal_pairs
-
         labels = cat([proposal.get_field("labels") for proposal in proposals], dim=0)
 
         rel_fg_cnt = len(labels.nonzero())
@@ -279,6 +333,26 @@ class RelPN(nn.Module):
         ce_weights = labels.new(class_logits.size(1)).fill_(1).float()
         ce_weights[0] = float(rel_fg_cnt) / (rel_bg_cnt + 1e-5)
         classification_loss = F.cross_entropy(class_logits, labels, weight=ce_weights)
+
+        # add an auxilary loss to mine some positive relationship pairs
+        # class_probs = torch.log_softmax(class_logits[:, 1:], dim=-1)
+        # freq_probs = torch.softmax(freq_prior[:, 1:], dim=-1)
+        # klloss = F.kl_div(class_probs, freq_probs, reduction='batchmean')
+        #
+        # classification_loss += klloss
+
+        # class_probs = torch.softmax(class_logits, dim=-1).detach()
+        # freq_labels = freq_prior.argmax(1)
+        # pred_labels = class_probs[:, 1:].argmax(1) + 1
+        # match_idx = (freq_labels == pred_labels).nonzero().view(-1)
+        # keep_idx = (labels[match_idx] == 0).nonzero().view(-1)
+        # match_idx = match_idx[keep_idx]
+        # if match_idx.numel() > 0:
+        #     labels_mined = freq_labels[match_idx]
+        #     class_logits_mined = class_logits[match_idx]
+        #     # weights = labels.new(class_logits.size(0)).fill_(1).float()
+        #     weights = class_probs.max(1)[0][match_idx].detach()
+        #     classification_loss += (weights * F.cross_entropy(class_logits_mined, labels_mined, weight=ce_weights, reduction='none')).mean()
 
         return classification_loss
 

@@ -179,12 +179,6 @@ def build_scene_parser_optimizer(cfg, model, local_rank=0, distributed=False):
     save_dir = get_save_dir(cfg)
     optimizer = make_optimizer(cfg, model)
     scheduler = make_lr_scheduler(cfg, optimizer)
-    if distributed:
-        model = torch.nn.parallel.DistributedDataParallel(
-            model, device_ids=[local_rank], output_device=local_rank,
-            # this should be removed if we update BatchNorm stats
-            broadcast_buffers=False,
-        )
     save_to_disk = get_rank() == 0
     checkpointer = SceneParserCheckpointer(cfg, model, optimizer, scheduler, save_dir, save_to_disk,
         logger=logging.getLogger("scene_graph_generation.checkpointer"))
@@ -193,4 +187,10 @@ def build_scene_parser_optimizer(cfg, model, local_rank=0, distributed=False):
     if cfg.MODEL.ROI_RELATION_HEAD.USE_GT_BOXES:
         model.rel_heads.box_feature_extractor.load_state_dict(model.roi_heads.box.feature_extractor.state_dict())
         model.rel_heads.box_predictor.load_state_dict(model.roi_heads.box.predictor.state_dict())
+    if distributed:
+        model = torch.nn.parallel.DistributedDataParallel(
+            model, device_ids=[local_rank], output_device=local_rank,
+            # this should be removed if we update BatchNorm stats
+            broadcast_buffers=False,
+        )        
     return optimizer, scheduler, checkpointer, extra_checkpoint_data

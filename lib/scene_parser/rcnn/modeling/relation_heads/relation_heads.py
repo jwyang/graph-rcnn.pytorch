@@ -5,7 +5,10 @@ import numpy as np
 import torch
 from torch import nn
 from lib.scene_parser.rcnn.structures.bounding_box_pair import BoxPairList
-from lib.scene_parser.rcnn.structures.boxlist_ops import boxlist_iou
+from lib.scene_parser.rcnn.structures.boxlist_ops import boxlist_iou, cat_boxlist
+from ..roi_heads.box_head.roi_box_feature_extractors import make_roi_box_feature_extractor
+from ..roi_heads.box_head.roi_box_predictors import make_roi_box_predictor
+from ..roi_heads.box_head.inference import make_roi_box_post_processor
 
 from .inference import make_roi_relation_post_processor
 from .loss import make_roi_relation_loss_evaluator
@@ -46,23 +49,41 @@ class ROIRelationHead(torch.nn.Module):
 
         self.freq_dist = None
         self.use_bias = self.cfg.MODEL.ROI_RELATION_HEAD.USE_BIAS
-        if self.cfg.MODEL.USE_FREQ_PRIOR or self.cfg.MODEL.ROI_RELATION_HEAD.USE_BIAS:
+        self.use_gt_boxes = self.cfg.MODEL.ROI_RELATION_HEAD.USE_GT_BOXES
+
+        if self.use_gt_boxes:
+            self.box_avgpool = nn.AdaptiveAvgPool2d(1)
+            self.box_feature_extractor = make_roi_box_feature_extractor(cfg, in_channels)
+            self.box_predictor = make_roi_box_predictor(cfg, self.box_feature_extractor.out_channels)
+            self.box_post_processor = make_roi_box_post_processor(cfg)
+            self._freeze_components(cfg)
+
+        # if self.cfg.MODEL.USE_FREQ_PRIOR or self.cfg.MODEL.ROI_RELATION_HEAD.USE_BIAS:
             # print("Using frequency bias: ", cfg.MODEL.FREQ_PRIOR)
             # self.freq_dist_file = op.join(cfg.DATA_DIR, cfg.MODEL.FREQ_PRIOR)
-            self.freq_dist_file = "freq_prior.npy"
-            self.freq_dist = np.load(self.freq_dist_file)
-            if self.cfg.MODEL.USE_FREQ_PRIOR:
-                # never predict __no_relation__ for frequency prior
-                self.freq_dist[:, :, 0] = 0
-                # we use probability directly
-                self.freq_bias = FrequencyBias(self.freq_dist)
-            else:
-                self.freq_dist = np.log(self.freq_dist + 1e-3)
-                self.freq_bias = FrequencyBias(self.freq_dist)
+        self.freq_dist_file = "freq_prior.npy"
+        self.freq_dist = np.load(self.freq_dist_file)
+        if self.cfg.MODEL.USE_FREQ_PRIOR:
+            # never predict __no_relation__ for frequency prior
+            self.freq_dist[:, :, 0] = 0
+            # we use probability directly
+            self.freq_bias = FrequencyBias(self.freq_dist)
+        else:
+            self.freq_dist[:, :, 0] = 0
+            self.freq_dist = np.log(self.freq_dist + 1e-3)
+            # self.freq_bias = FrequencyBias(self.freq_dist)
+            self.freq_dist = torch.from_numpy(self.freq_dist)
 
         # if self.cfg.MODEL.USE_FREQ_PRIOR:
         #     self.freq_dist = torch.from_numpy(np.load("freq_prior.npy"))
         #     self.freq_dist[:, :, 0] = 0
+
+    def _freeze_components(self, cfg):
+        for param in self.box_feature_extractor.parameters():
+            param.requires_grad = False
+
+        for param in self.box_predictor.parameters():
+            param.requires_grad = False
 
     def _get_proposal_pairs(self, proposals):
         proposal_pairs = []
@@ -107,6 +128,22 @@ class ROIRelationHead(torch.nn.Module):
             losses (dict[Tensor]): During training, returns the losses for the
                 head. During testing, returns an empty dict.
         """
+
+        if self.training and self.use_gt_boxes:
+            # augment proposals with ground-truth boxes
+            targets_cp = [target.copy_with_fields(target.fields()) for target in targets]
+
+            with torch.no_grad():
+                x = self.box_feature_extractor(features, targets_cp)
+                class_logits, box_regression = self.box_predictor(x)
+
+            boxes_per_image = [len(proposal) for proposal in targets_cp]
+            target_features = x.split(boxes_per_image, dim=0)
+            for proposal, target_feature in zip(targets_cp, target_features):
+                proposal.add_field("features", self.box_avgpool(target_feature))
+            proposals_gt = self.box_post_processor((class_logits, box_regression), targets_cp, skip_nms=True)
+            proposals = [cat_boxlist([proposal, proposal_gt]) for (proposal, proposal_gt) in zip(proposals, proposals_gt)]
+
         if self.training:
             # Faster R-CNN subsamples during training the proposals with a fixed
             # positive / negative ratio
@@ -135,6 +172,7 @@ class ROIRelationHead(torch.nn.Module):
         else:
             # extract features that will be fed to the final classifier. The
             # feature_extractor generally corresponds to the pooler + heads
+
             x, obj_class_logits, pred_class_logits, obj_class_labels, rel_inds = \
                 self.rel_predictor(features, proposals, proposal_pairs)
 
@@ -165,7 +203,7 @@ class ROIRelationHead(torch.nn.Module):
             # if self.cfg.MODEL.USE_RELPN:
             #     for res, relness in zip(result, relnesses):
             #         res.add_field("scores", res.get_field("scores") * relness.view(-1, 1))
-            
+
             return x, result, {}
 
         loss_obj_classifier = 0
@@ -173,7 +211,9 @@ class ROIRelationHead(torch.nn.Module):
             loss_obj_classifier = self.loss_evaluator.obj_classification_loss(proposals, [obj_class_logits])
 
         if self.cfg.MODEL.USE_RELPN:
-            loss_pred_classifier = self.relpn.pred_classification_loss([pred_class_logits])
+            idx = obj_class_labels[rel_inds[:, 0]] * 151 + obj_class_labels[rel_inds[:, 1]]
+            freq_prior = self.freq_dist.view(-1, 51)[idx].cuda()
+            loss_pred_classifier = self.relpn.pred_classification_loss([pred_class_logits], freq_prior=freq_prior)
             return (
                 x,
                 proposal_pairs,
